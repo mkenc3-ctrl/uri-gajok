@@ -509,3 +509,12 @@ body.hasnav #nav{display:flex}
 .fbar{height:10px;background:rgba(255,255,255,.35);border-radius:6px;overflow:hidden;margin-bottom:10px}
 .fbar i{display:block;height:100%;background:#fff}
 .direct{display:inline-block;margin:6px 0 2px 28px;padding:8px 14px;border-radius:14px;background:#e6fcf5;color:#087f5b;font-size:17px;box-shadow:0 3px 0 #b2f2d9}
+/* 가족 소식판 · 칭찬 한마디 */
+.fdrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:2px dashed var(--line)}
+.fdrow:first-of-type{border-top:0}
+.fdt{font-size:14px;color:var(--sub);width:44px;flex:none}
+.fdx{flex:1;font-size:16px;line-height:1.35}.fdx b{font-weight:400}
+.fdx small{display:block;color:var(--sub);font-size:13px}
+.qnote{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.qnote button{padding:6px 10px;border-radius:999px;background:#fff7e0;font-size:15px;box-shadow:0 2px 0 #f0d98a}
+.qnote button.on{background:#ffd84d}

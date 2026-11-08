@@ -608,6 +608,24 @@ function vWho(){
   return h;
 }
 
+/* 오늘 가족 소식판 */
+function feedHtml(max){
+  var td = today(), ev = [];
+  S.reqs.forEach(function(r){
+    if(r.ds!==td || r.type==='shop') return;
+    var k = mem(r.kid); if(!k) return;
+    if(r.st==='ok') ev.push({t:r.at||r.t, k:k, ic:'✅', tx:r.text.replace(/^\S+ /,''), sub:(r.by||'부모님')+' 확인'+(r.pts?' · +'+r.pts+'점':'')});
+    else if(r.st==='wait') ev.push({t:r.t, k:k, ic:'⏳', tx:r.text.replace(/^\S+ /,''), sub:'확인 기다리는 중'});
+  });
+  ev.sort(function(a,b){ return b.t-a.t; });
+  var h = '<div class="board feed"><h2>🕒 오늘 가족 소식</h2>';
+  if(!ev.length) h += '<div class="empty">아직 오늘 소식이 없어요. 첫 미션을 보고해 봐요!</div>';
+  ev.slice(0, max||8).forEach(function(e){
+    h += '<div class="fdrow"><span class="fdt">'+hm(e.t)+'</span>'+mini(e.k)+'<div class="fdx"><b>'+esc(e.k.name)+'</b> '+e.ic+' '+esc(e.tx)+'<small>'+esc(e.sub)+'</small></div></div>';
+  });
+  return h + '</div>';
+}
+
 /* ---------- 처음 화면 ---------- */
 function vHome(){
   var wait = waiting().length;
@@ -637,6 +655,7 @@ function vHome(){
 
   var arr = kids().map(function(mb){ return {mb:mb, sc:starCount(mb.id), p:S.m[mb.id].points}; })
     .sort(function(a,b){ return b.sc-a.sc || b.p-a.p; });
+  h += feedHtml(8);
   h += '<div class="board"><h2>🏅 오늘의 별 모으기</h2>';
   arr.forEach(function(r,i){
     h += '<div class="rank"><div class="no">'+['🥇','🥈','🥉'][i]+'</div><div class="who">'+mini(r.mb)+' '+esc(r.mb.name)+'</div><div class="sc">⭐ '+r.sc+'개 · '+r.p+'점</div></div>';
@@ -717,6 +736,7 @@ function vKid(me){
       (open?'짝 맞추기 · 틀린 그림 · 노래 퀴즈 · 구구단':'미션을 다 하면 열려요')+'</div></span></button>'+
     '</div>';
 
+  h += feedHtml(5);
   h += '<div class="today"><h3>오늘 모은 별</h3><div class="starrow">'+
     '<div class="'+(s.miss?'on':'')+'"><b>⭐</b>미션 완료</div><div class="'+(s.out?'on':'')+'"><b>⭐</b>외출 약속</div>'+
     '<div class="'+(s.free?'on':'')+'"><b>⭐</b>자유시간</div><div class="'+(s.rep?'on':'')+'"><b>⭐</b>마감 보고</div></div></div>';
@@ -1036,6 +1056,7 @@ function vParent(me){
     h += '<div class="req"><div class="rwho">'+mini(k)+' <b>'+esc(k.name)+'</b> <span class="tm">'+hm(r.t)+(r.ds!==today()?' ('+r.ds.slice(5)+')':'')+'</span></div>'+
       '<div class="rwhat">'+esc(r.text)+'</div>'+ proofImg(r, 'rphoto') +
       '<input class="inp rnote" id="note_'+r.id+'" placeholder="한마디 (안 써도 돼요)" maxlength="60">'+
+      '<div class="qnote">'+['잘했어 👍','최고야 🏆','고마워 💛','멋지다 ✨','조금만 더 💪'].map(function(q){ return '<button data-act="qnote" data-id="'+r.id+'" data-v="'+q+'">'+q+'</button>'; }).join('')+'</div>'+
       '<div class="rbtns"><button class="rok" data-act="rok" data-v="'+r.id+'">👍 수락'+(pts?' (+'+pts+'점)':'')+'</button>'+
       '<button class="rno" data-act="rno" data-v="'+r.id+'">'+(NO_LABEL[r.type]||'↩ 다시 해요')+'</button></div></div>';
   });
@@ -1332,6 +1353,10 @@ app.addEventListener('click', function(e){
       break;
     case 'fstart': focus = {min:+v, end:Date.now() + (+v)*60000}; focusTick(); render(); say(v+'분 집중 시작! 화이팅!'); break;
     case 'fstop': focus = null; clearInterval(focusT); render(); toast('타이머를 멈췄어요', {say:false}); break;
+    case 'qnote':
+      var qi = document.getElementById('note_'+b.getAttribute('data-id'));
+      if(qi){ qi.value = v; document.querySelectorAll('.qnote button[data-id="'+b.getAttribute('data-id')+'"]').forEach(function(x){ x.classList.toggle('on', x===b); }); }
+      break;
     case 'redo':
       if(me && !me.kid && V.kid){
         var rm = MISSIONS.filter(function(x){ return x.k===v; })[0];
