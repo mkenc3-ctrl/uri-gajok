@@ -504,7 +504,7 @@ function goBack(){
   V.screen = p.screen; V.id = p.id; V.kid = p.kid; V.tmp = {}; render(); window.scrollTo(0, p.y||0);
 }
 function closeOverlay(){
-  var o = document.querySelector('.slides, .lightbox, .pop');
+  var o = document.querySelector('.pinpad, .slides, .lightbox, .pop');
   if(!o) return false;
   if(o.classList.contains('slides')) clearInterval(slideT);
   o.remove(); return true;
@@ -555,6 +555,8 @@ document.addEventListener('click', function(e){
   else go(a);
 });
 function render(){
+  if(['home','who','login'].indexOf(V.screen)<0 && V.id && !isUnlocked(V.id)){ V.screen = 'home'; V.tmp = {}; }
+  if(V.screen==='home' && V.id && !isOwnerId(V.id)) clearUnlocked();
   var me = V.id ? mem(V.id) : null;
   if(me) document.documentElement.style.setProperty('--me', me.color);
   if(window.Games) Games.stop();
@@ -685,6 +687,69 @@ function memoryHtml(){
     '<div style="margin-top:8px;font-size:18px">'+esc(mp.cap)+'</div><button data-act="memnext">🔄 다른 사진 보기</button></div>';
 }
 
+/* ---------- 사람마다 비밀번호 4자리 ---------- */
+function pinHash(code){ var h = 7; var t = 'uri-gajok:'+code; for(var i=0;i<t.length;i++){ h = (h*131 + t.charCodeAt(i)) % 2147483647; } return 'h'+h; }
+function isOwnerId(id){ try{ return localStorage.getItem('fam-owner')===id; }catch(e){ return false; } }
+function isUnlocked(id){ if(isOwnerId(id)) return true; try{ return sessionStorage.getItem('fam-un')===id; }catch(e){ return false; } }
+function setUnlocked(id){ try{ sessionStorage.setItem('fam-un', id); }catch(e){} }
+function clearUnlocked(){ try{ sessionStorage.removeItem('fam-un'); }catch(e){} }
+// 부모님 비밀번호(또는 예전 잠금 번호)는 모든 화면을 열 수 있어요
+function parentCode(code){
+  if(S.pin && code===S.pin) return true;
+  var h = pinHash(code);
+  return parents().some(function(p){ return p.pinH && p.pinH===h; });
+}
+function hasParentLock(){ return !!S.pin || parents().some(function(p){ return !!p.pinH; }); }
+/* 숫자 누르는 창 */
+function pinPad(title, sub, done){
+  var o = document.createElement('div'); o.className = 'pinpad'; var code = '';
+  o.innerHTML = '<div class="pbox"><div class="ptitle">'+esc(title)+'</div><div class="psub">'+esc(sub||'')+'</div><div class="pdots"><i></i><i></i><i></i><i></i></div><div class="pmsg"></div><div class="pkeys">'+
+    ['1','2','3','4','5','6','7','8','9','취소','0','⌫'].map(function(k){ return '<button data-k="'+k+'">'+k+'</button>'; }).join('')+'</div></div>';
+  document.body.appendChild(o);
+  function draw(){ o.querySelectorAll('.pdots i').forEach(function(d, i){ d.classList.toggle('on', i<code.length); }); }
+  var api = {
+    close: function(){ o.remove(); },
+    fail: function(msg){ code = ''; draw(); o.querySelector('.pmsg').textContent = msg; var bx = o.querySelector('.pbox'); bx.classList.remove('shake'); void bx.offsetWidth; bx.classList.add('shake'); sfx('no'); try{ if(navigator.vibrate) navigator.vibrate(120); }catch(e){} }
+  };
+  o.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var k = b.getAttribute('data-k');
+    if(k==='취소'){ o.remove(); return; }
+    if(k==='⌫'){ code = code.slice(0, -1); draw(); return; }
+    if(code.length>=4) return;
+    code += k; draw(); sfx('tap');
+    if(code.length===4){ var c = code; setTimeout(function(){ done(c, api); }, 120); }
+  });
+  draw(); return api;
+}
+/* 이 사람 화면에 들어가도 되는지 확인하고 들어가기 */
+function enterMember(mb, then){
+  if(!mb) return;
+  if(isUnlocked(mb.id)){ then(); return; }
+  if(!mb.pinH){
+    // 처음: 나만 아는 비밀번호 정하기
+    pinPad(mb.name+' 비밀번호 정하기', '나만 아는 숫자 4자리를 눌러요', function(c1, p1){
+      p1.close();
+      pinPad('한 번 더 눌러요', '방금 정한 숫자 4자리', function(c2, p2){
+        if(c1!==c2){ p2.fail('처음과 달라요. 다시 눌러요'); return; }
+        p2.close(); mb.pinH = pinHash(c1); save(); setUnlocked(mb.id);
+        toast('🔑 비밀번호를 정했어요. 다른 사람은 내 화면에 못 들어와요', {kind:'ok', say:'비밀번호를 정했어요. 꼭 기억해요.'});
+        then();
+      });
+    });
+    say(mb.name+', 나만 아는 비밀번호 네 자리를 정해요.');
+    return;
+  }
+  pinPad(mb.name+' 비밀번호', '숫자 4자리를 눌러요'+(mb.kid?' (부모님 비밀번호도 돼요)':''), function(c, p){
+    if(pinHash(c)===mb.pinH || parentCode(c)){ p.close(); setUnlocked(mb.id); then(); }
+    else p.fail('비밀번호가 맞지 않아요');
+  });
+}
+function askParent(then){
+  if(!hasParentLock()){ then(); return; }
+  pinPad('부모님 비밀번호', '엄마나 아빠 비밀번호를 눌러요', function(c, p){ if(parentCode(c)){ p.close(); then(); } else p.fail('비밀번호가 맞지 않아요'); });
+}
+
 /* ---------- 누구예요? (이 휴대폰 주인 고르기) ---------- */
 function vWho(){
   var h = '<div class="who"><div class="whohd"><div class="whoic">👋</div><h1>누구예요?</h1><p>이 휴대폰을 쓰는 사람을 눌러 주세요.<br>다음부터는 앱을 켜면 <b>바로 내 화면</b>이 열려요.</p></div>';
@@ -809,14 +874,14 @@ function vHome(){
   h += '<div class="hello">👨‍👩‍👧‍👦 부모님</div><div class="members">';
   parents().forEach(function(mb){
     h += '<button class="mcard" data-act="pick" data-id="'+mb.id+'" style="border-color:'+mb.color+'55">'+
-      '<div class="ava">'+face(mb)+'</div><div class="nm">'+esc(mb.name)+'</div><div class="lv">'+esc(mb.role)+' · 확인 담당</div>'+
+      '<div class="ava">'+face(mb)+'</div><div class="nm">'+(mb.pinH?'🔒 ':'')+esc(mb.name)+'</div><div class="lv">'+esc(mb.role)+' · 확인 담당</div>'+
       '<div class="pt" style="background:'+(wait?'#ffd84d':'#eee')+'">📥 확인할 것 '+wait+'개</div>'+nbadge(mb.id)+'</button>';
   });
   h += '</div><div class="hello" style="margin-top:16px">🧒 아이들 — 내 얼굴을 눌러요!</div><div class="members kids3">';
   kids().forEach(function(mb){
     var st = S.m[mb.id], lv = level(st.points), sc = starCount(mb.id), mc = missOkCount(mb.id);
     h += '<button class="mcard" data-act="pick" data-id="'+mb.id+'" style="border-color:'+mb.color+'55">'+
-      '<div class="ava">'+face(mb)+'</div><div class="nm">'+esc(mb.name)+'</div>'+
+      '<div class="ava">'+face(mb)+'</div><div class="nm">'+(mb.pinH?'🔒 ':'')+esc(mb.name)+'</div>'+
       '<div class="lv">레벨 '+lv+' · '+pet(mb.id).ic+' '+pet(mb.id).nm+'</div>'+
       '<div class="lv">미션 '+mc+'/'+MISSIONS.length+(freeOpen(mb.id)?' · 🎮 자유시간':'')+'</div>'+
       '<div class="stars">'+'⭐'.repeat(sc)+'<span style="opacity:.25">'+'⭐'.repeat(4-sc)+'</span></div>'+
@@ -917,9 +982,10 @@ function vKid(me){
   h += weekHtml(me.id) + calHtml(me.id);
   h += '<div class="section"><h2>🎖️ 내 배지</h2><div class="badges">';
   BADGES.forEach(function(b){ var on = st.badges.indexOf(b.id)>=0; h += '<div class="bdg'+(on?' on':'')+'" title="'+esc(b.how)+'"><b>'+b.ic+'</b>'+b.nm+'</div>'; });
-  h += '</div></div>' + memoryHtml() + logHtml(me.id) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
+  h += '</div></div>' + memoryHtml() + logHtml(me.id) + pinBtn(me) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
 }
+function pinBtn(me){ return '<button class="ownerbtn" data-act="mypin">🔑 내 비밀번호 바꾸기</button>'; }
 function isOwner(me){ try{ return !!me && localStorage.getItem('fam-owner')===me.id; }catch(e){ return false; } }
 function nextHtml(me, d, open, freeNow){
   var nx = MISSIONS.filter(function(m){ var st = (d.miss[m.k]||{}).st; return st!=='ok' && st!=='wait'; })[0];
@@ -1246,7 +1312,7 @@ function vParent(me){
       '🌙 '+(d.report?(d.report.st==='ok'?'마감 완료':d.report.st==='wait'?'마감 확인 대기':'마감 다시 쓰는 중'):'마감 전')+'</div></div><span class="arrow">›</span></button>';
   });
   h += '</div>' + weekAllHtml() + askHtml() + '<button class="wide" data-act="praise">💌 아이에게 칭찬 보내기</button>'+
-    '<button class="wide" data-act="games">🕹️ 게임방 (아이들과 기록 겨루기)</button>' + memoryHtml() + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
+    '<button class="wide" data-act="games">🕹️ 게임방 (아이들과 기록 겨루기)</button>' + memoryHtml() + pinBtn(me) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
 }
 function vKidView(me){
@@ -1256,7 +1322,7 @@ function vKidView(me){
   h += '<div class="section"><h2>🎯 오늘의 미션</h2>';
   MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+(ms.st==='ok' && !(me && me.kid) ? '<button class="redo" data-act="redo" data-v="'+m.k+'">↩ 다시 하세요</button>' : '')+
     (ms.st!=='ok' && !(me && me.kid) ? '<button class="direct" data-act="direct" data-v="'+m.k+'">👍 바로 완료</button>' : '')+'</div>'; });
-  h += '</div><button class="wide" data-act="money" data-v="'+k.id+'">💰 '+esc(k.name)+' 용돈 기입장 · 남은 돈 '+won(moneyBal(k.id))+'</button>' + weekHtml(k.id) + '<div class="section"><h2>✏️ 숙제 목록</h2>';
+  h += '</div>'+(k.pinH && me && !me.kid ? '<button class="wide ghostbtn" data-act="pinreset" data-v="'+k.id+'">🔑 '+esc(k.name)+' 비밀번호 지우기 (잊어버렸을 때)</button>' : '')+'<button class="wide" data-act="money" data-v="'+k.id+'">💰 '+esc(k.name)+' 용돈 기입장 · 남은 돈 '+won(moneyBal(k.id))+'</button>' + weekHtml(k.id) + '<div class="section"><h2>✏️ 숙제 목록</h2>';
   if(!d.hw.length) h += '<div class="empty">적은 숙제가 없어요</div>';
   d.hw.forEach(function(x){ h += '<div class="vrow">'+(x.done?'✔️':'⬜')+' '+esc(x.t)+'</div>'; });
   h += '</div><div class="section"><h2>🚶 외출</h2>';
@@ -1483,10 +1549,14 @@ app.addEventListener('click', function(e){
     case 'who': go('who'); break;
     case 'whopick':
       var wh = mem(b.getAttribute('data-id')); if(!wh) break;
-      if(!wh.kid && S.pin && prompt(wh.role+' 잠금 번호를 넣어 주세요')!==S.pin){ toast('번호가 맞지 않아요'); return; }
-      try{ localStorage.setItem('fam-owner', wh.id); localStorage.setItem('fam-asked', '1'); localStorage.setItem('fam-last', wh.id); }catch(e){}
-      toast('📱 이 휴대폰은 '+wh.name+' 것으로 정했어요', {kind:'ok', say:false});
-      go('me', wh.id); break;
+      if(isOwnerId(wh.id)){ go('me', wh.id); break; }
+      clearUnlocked();
+      enterMember(wh, function(){
+        try{ localStorage.setItem('fam-owner', wh.id); localStorage.setItem('fam-asked', '1'); localStorage.setItem('fam-last', wh.id); }catch(e){}
+        toast('📱 이 휴대폰은 '+wh.name+' 것으로 정했어요', {kind:'ok', say:false});
+        go('me', wh.id);
+      });
+      break;
     case 'whoskip':
       try{ localStorage.setItem('fam-asked', '1'); localStorage.removeItem('fam-owner'); }catch(e){}
       go('home'); break;
@@ -1497,13 +1567,11 @@ app.addEventListener('click', function(e){
       toast(cur===me.id ? '📱 이제 앱을 켜면 처음 화면이 나와요' : '📱 이제 앱을 켜면 바로 '+me.name+' 화면이 열려요', {kind:'ok'});
       render(); break;
     case 'settings':
-      if(S.pin && prompt('부모님 잠금 번호를 넣어 주세요')!==S.pin){ toast('번호가 맞지 않아요'); return; }
-      go('settings'); break;
+      askParent(function(){ go('settings'); }); break;
     case 'pick':
       var who = mem(b.getAttribute('data-id'));
-      if(!who.kid && S.pin && prompt(who.role+' 잠금 번호를 넣어 주세요')!==S.pin){ toast('번호가 맞지 않아요'); return; }
-      try{ localStorage.setItem('fam-last', who.id); }catch(err){}
-      go('me', who.id); break;
+      enterMember(who, function(){ try{ localStorage.setItem('fam-last', who.id); }catch(err){} go('me', who.id); });
+      break;
     case 'me': case 'hw': case 'out': case 'free': case 'report': case 'praise': case 'games': go(a); break;
     case 'play': pushHist(); V.screen = 'play'; V.tmp = {g:v}; render(); window.scrollTo(0,0); break;
     case 'praiseto': go('praise'); V.tmp.to = v; render(); break;
@@ -1564,6 +1632,18 @@ app.addEventListener('click', function(e){
       toast((io==='in'?'📥 ':'📤 ')+won(amt)+' 적었어요 · 남은 돈 '+won(moneyBal(mk.id)), {kind:'ok', say:(io==='in'?'들어온 돈 ':'쓴 돈 ')+amt+'원을 적었어요. 남은 돈은 '+moneyBal(mk.id)+'원이에요.'});
       break;
     case 'mdel': if(confirm('이 기록을 지울까요?')){ S.money = S.money.filter(function(a){ return a.id!==v; }); save(); render(); } break;
+    case 'pinreset':
+      var pk = mem(v);
+      if(pk && me && !me.kid && confirm(pk.name+' 비밀번호를 지울까요? 다음에 들어갈 때 새로 정해요.')){ delete pk.pinH; save(); render(); toast('🔑 '+pk.name+' 비밀번호를 지웠어요', {kind:'ok'}); }
+      break;
+    case 'mypin':
+      if(!me) break;
+      pinPad('지금 비밀번호', '바꾸려면 지금 비밀번호부터 눌러요', function(c, p){
+        if(me.pinH && pinHash(c)!==me.pinH && !parentCode(c)){ p.fail('비밀번호가 맞지 않아요'); return; }
+        p.close(); delete me.pinH; clearUnlocked();
+        enterMember(me, function(){ render(); });
+      });
+      break;
     case 'redo':
       if(me && !me.kid && V.kid){
         var rm = MISSIONS.filter(function(x){ return x.k===v; })[0];
