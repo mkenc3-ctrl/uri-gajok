@@ -481,6 +481,26 @@ function guide(from){
   else if(sc==='praise') t = '칭찬 보내기예요. 아이와 칭찬을 골라서 보내요.';
   if(t) say(t, true);
 }
+function navBar(me){
+  var nav = document.getElementById('nav');
+  if(!nav){ nav = document.createElement('nav'); nav.id = 'nav'; document.body.appendChild(nav); }
+  var show = me && ['home','login','play','settings'].indexOf(V.screen)<0;
+  document.body.classList.toggle('hasnav', !!show);
+  if(!show){ nav.innerHTML = ''; return; }
+  var un = unread(me.id), sc = V.screen;
+  function it(act, ic, nm, on, extra){ return '<button data-act="'+act+'" class="'+(on?'on':'')+'"><span class="ni">'+ic+'</span>'+nm+(extra||'')+'</button>'; }
+  nav.innerHTML = it('me', '🏠', '내 화면', sc==='me') +
+    it('chat', '💬', '대화', sc==='chat', un ? '<i class="nbd">'+un+'</i>' : '') +
+    it('games', me.kid && !freeOpen(me.id) ? '🔒' : '🕹️', '게임', sc==='games') +
+    it('urgent', '🚨', '긴급', false);
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('#nav button'); if(!b) return;
+  var a = b.getAttribute('data-act'), me = V.id ? mem(V.id) : null; if(!me) return;
+  sfx('tap');
+  if(a==='urgent'){ go('chat'); V.tmp.urgent = true; render(); say('긴급 공지예요. 가족 모두에게 크게 알릴 내용을 쓰거나 골라요.'); }
+  else go(a);
+});
 function render(){
   var me = V.id ? mem(V.id) : null;
   if(me) document.documentElement.style.setProperty('--me', me.color);
@@ -488,6 +508,7 @@ function render(){
   var f = {login:vLogin, shop:vShop, home:vHome, me:(me && !me.kid ? vParent : vKid), hw:vHw, out:vOut, free:vFree, report:vReport,
            praise:vPraise, kid:vKidView, settings:vSettings, games:vGames, play:vPlay, chat:vChat}[V.screen] || vHome;
   app.innerHTML = f(me);
+  navBar(me);
   fillProofs();
   if(V.screen==='chat' && me){ markRead(me); window.scrollTo(0, document.body.scrollHeight); }
   if(V.screen==='free') tick();
@@ -569,7 +590,7 @@ function memoryHtml(){
 function vHome(){
   var wait = waiting().length;
   var h = '<div class="top"><h1>🏠 우리 가족 하루</h1><button class="gear" data-act="voice" aria-label="음성 안내 켜고 끄기">'+(voiceOn()?'🗣️':'🤐')+'</button><button class="gear" data-act="snd" aria-label="소리 켜고 끄기">'+(soundOn()?'🔊':'🔇')+'</button><button class="gear" data-act="settings" aria-label="가족 설정">⚙️</button></div>'+
-    albumHtml() + urgentHtml(null) + '<div class="date">'+koDate()+'</div>';
+    urgentHtml(null) + '<div class="date">'+koDate()+'</div>';
   var lastMe = null; try{ lastMe = mem(localStorage.getItem('fam-last')); }catch(e){}
   if(lastMe) h += '<button class="quickme" data-act="pick" data-id="'+lastMe.id+'">'+mini(lastMe)+' <b>'+esc(lastMe.name)+'</b> 화면으로 바로 가기'+(unread(lastMe.id)?' <span class="nb">💬 '+unread(lastMe.id)+'</span>':'')+' ›</button>';
   if(wait) h += '<div class="alarm">📥 부모님 확인을 기다리는 보고가 <b>'+wait+'개</b> 있어요</div>';
@@ -579,7 +600,7 @@ function vHome(){
       '<div class="ava">'+face(mb)+'</div><div class="nm">'+esc(mb.name)+'</div><div class="lv">'+esc(mb.role)+' · 확인 담당</div>'+
       '<div class="pt" style="background:'+(wait?'#ffd84d':'#eee')+'">📥 확인할 것 '+wait+'개</div>'+nbadge(mb.id)+'</button>';
   });
-  h += '</div><div class="hello" style="margin-top:16px">🧒 우리 아이들 — 내 얼굴을 눌러요!</div><div class="members kids3">';
+  h += '</div><div class="hello" style="margin-top:16px">🧒 아이들 — 내 얼굴을 눌러요!</div><div class="members kids3">';
   kids().forEach(function(mb){
     var st = S.m[mb.id], lv = level(st.points), sc = starCount(mb.id), mc = missOkCount(mb.id);
     h += '<button class="mcard" data-act="pick" data-id="'+mb.id+'" style="border-color:'+mb.color+'55">'+
@@ -589,7 +610,7 @@ function vHome(){
       '<div class="stars">'+'⭐'.repeat(sc)+'<span style="opacity:.25">'+'⭐'.repeat(4-sc)+'</span></div>'+
       '<div class="pt">'+st.points+'점'+(st.streak>1?' · 🔥'+st.streak+'일':'')+'</div>'+nbadge(mb.id)+'</button>';
   });
-  h += '</div>';
+  h += '</div>' + albumHtml();
 
   var arr = kids().map(function(mb){ return {mb:mb, sc:starCount(mb.id), p:S.m[mb.id].points}; })
     .sort(function(a,b){ return b.sc-a.sc || b.p-a.p; });
@@ -629,7 +650,7 @@ function vKid(me){
     (myWait?'<span class="chip">⏳ 확인 기다리는 중 '+myWait+'개</span>':'')+'</div></div>';
 
   h = h.replace('<div class="hero">', urgentHtml(me)+'<div class="hero">');
-  h += petHtml(me.id) + msgNotice(me);
+  h += nextHtml(me, d, open, freeNow) + msgNotice(me) + petHtml(me.id);
   // 부모님 답장
   var notes = S.reqs.filter(function(r){ return r.kid===me.id && r.st!=='wait' && !r.seen; }).slice(-5).reverse();
   if(notes.length){
@@ -670,7 +691,7 @@ function vKid(me){
     '<button class="tile t-urgent wide2" data-act="urgent"><span class="ic">🚨</span><span><div class="tt">긴급 공지 올리기</div><div class="st">가족 모두에게 바로 크게 알려요</div></span></button>'+
     '<button class="tile t-chat wide2" data-act="chat"><span class="ic">💬</span><span><div class="tt">가족 대화방'+(unread(me.id)?' <span class="nb">새 쪽지 '+unread(me.id)+'</span>':'')+'</div><div class="st">엄마·아빠·형제에게 쪽지 보내기</div></span></button>'+
     '<button class="tile t-game wide2'+(open?'':' locked')+'" data-act="games"><span class="ic">'+(open?'🕹️':'🔒')+'</span><span><div class="tt">게임방</div><div class="st">'+
-      (open?'사진 짝 맞추기 · 영어 동요 퀴즈 · 구구단':'미션을 다 하면 열려요')+'</div></span></button>'+
+      (open?'짝 맞추기 · 틀린 그림 · 노래 퀴즈 · 구구단':'미션을 다 하면 열려요')+'</div></span></button>'+
     '</div>';
 
   h += '<div class="today"><h3>오늘 모은 별</h3><div class="starrow">'+
@@ -680,15 +701,31 @@ function vKid(me){
   h += calHtml(me.id);
   h += '<div class="section"><h2>🎖️ 내 배지</h2><div class="badges">';
   BADGES.forEach(function(b){ var on = st.badges.indexOf(b.id)>=0; h += '<div class="bdg'+(on?' on':'')+'" title="'+esc(b.how)+'"><b>'+b.ic+'</b>'+b.nm+'</div>'; });
-  h += '</div></div>' + memoryHtml() + logHtml(me.id);
+  h += '</div></div>' + memoryHtml() + logHtml(me.id) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
+}
+function isOwner(me){ try{ return !!me && localStorage.getItem('fam-owner')===me.id; }catch(e){ return false; } }
+function nextHtml(me, d, open, freeNow){
+  var nx = MISSIONS.filter(function(m){ var st = (d.miss[m.k]||{}).st; return st!=='ok' && st!=='wait'; })[0];
+  var h = '<div class="nextbox">';
+  if(freeNow) h += '<div class="nxl">🎮 지금은 자유시간!</div><button class="nxb" data-act="free">⏱️ 남은 시간 보기</button>';
+  else if(nx){
+    var re = (d.miss[nx.k]||{}).st==='no';
+    h += '<div class="nxl">'+(re?'↩️ 다시 해야 할 일':'👉 지금 할 일')+'</div><div class="nxm"><span>'+nx.ic+'</span><b>'+nx.nm+'</b></div>'+
+      (re && d.miss[nx.k].note ? '<div class="nxn">부모님: 「'+esc(d.miss[nx.k].note)+'」</div>' : '')+
+      (nx.k==='hw' ? '<button class="nxb" data-act="hw">✏️ 숙제 보러 가기</button>' : '<button class="nxb" data-act="mreport" data-v="'+nx.k+'">📷 다 했어요! 사진 찍고 보고</button>')+
+      (nx.na ? '<button class="nxs" data-act="mna" data-v="'+nx.k+'">'+nx.na+'</button>' : '');
+  }
+  else if(!open) h += '<div class="nxl">⏳ 부모님 확인을 기다려요</div><div class="nxn">미션을 다 보고했어요. 확인해 주시면 자유시간이 열려요!</div>';
+  else h += '<div class="nxl">🎉 오늘 미션 끝!</div><button class="nxb" data-act="free">🎮 자유시간 시작하기</button>';
+  return h + '</div>';
 }
 function logHtml(id){
   var st = S.m[id], h = '<div class="section"><h2>📒 점수·코인 기록</h2><ul class="log">';
   if(!st.log.length) h += '<li class="empty" style="display:block">아직 기록이 없어요. 첫 점수를 모아 봐요!</li>';
   st.log.slice(0,10).forEach(function(l){
     var dt = new Date(l.t);
-    h += '<li><span>'+esc(l.why)+' <span class="tm">'+(dt.getMonth()+1)+'/'+dt.getDate()+' '+hm(l.t)+'</span></span>'+(l.coin?'<span class="p" style="color:#e07a00">-'+(-l.n)+'코인</span>':'<span class="p">+'+l.n+'점</span>')+'</li>';
+    h += '<li><span>'+esc(l.why)+' <span class="tm">'+(dt.getMonth()+1)+'/'+dt.getDate()+' '+hm(l.t)+'</span></span>'+(l.coin?'<span class="p" style="color:#e07a00">-'+(-l.n)+'코인</span>':'<span class="p"'+(l.n<0?' style="color:#e03131"':'')+'>'+(l.n<0?l.n:'+'+l.n)+'점</span>')+'</li>';
   });
   return h + '</ul></div>';
 }
@@ -961,7 +998,7 @@ function vParent(me){
       '🌙 '+(d.report?(d.report.st==='ok'?'마감 완료':d.report.st==='wait'?'마감 확인 대기':'마감 다시 쓰는 중'):'마감 전')+'</div></div><span class="arrow">›</span></button>';
   });
   h += '</div>' + askHtml() + '<button class="wide" data-act="praise">💌 아이에게 칭찬 보내기</button>'+
-    '<button class="wide" data-act="games">🕹️ 게임방 (아이들과 기록 겨루기)</button>' + memoryHtml();
+    '<button class="wide" data-act="games">🕹️ 게임방 (아이들과 기록 겨루기)</button>' + memoryHtml() + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
 }
 function vKidView(me){
@@ -1189,6 +1226,12 @@ app.addEventListener('click', function(e){
   var a = b.getAttribute('data-act'), v = b.getAttribute('data-v'), me = V.id ? mem(V.id) : null, d;
   switch(a){
     case 'home': go('home'); break;
+    case 'owner':
+      if(!me) break;
+      var cur = null; try{ cur = localStorage.getItem('fam-owner'); }catch(e){}
+      try{ if(cur===me.id) localStorage.removeItem('fam-owner'); else localStorage.setItem('fam-owner', me.id); }catch(e){}
+      toast(cur===me.id ? '📱 이제 앱을 켜면 처음 화면이 나와요' : '📱 이제 앱을 켜면 바로 '+me.name+' 화면이 열려요', {kind:'ok'});
+      render(); break;
     case 'settings':
       if(S.pin && prompt('부모님 잠금 번호를 넣어 주세요')!==S.pin){ toast('번호가 맞지 않아요'); return; }
       go('settings'); break;
@@ -1449,7 +1492,10 @@ async function boot(){
     app.innerHTML = '<div class="loading">☁️ 가족 소식 불러오는 중…</div>';
     try{ await cloudStart(); }catch(e){ toast('서버에 연결하지 못했어요. 이 기기 기록으로 보여 줄게요'); }
   }
+  var owner = null; try{ owner = mem(localStorage.getItem('fam-owner')); }catch(e){}
+  if(owner && V.screen==='home'){ V.screen = 'me'; V.id = owner.id; }
   render();
+  if(owner) guide('home');
 }
 app.addEventListener('keydown', function(e){
   if(e.key==='Enter' && e.target.id==='askin' && !e.isComposing && e.keyCode!==229){ e.preventDefault(); askGo(e.target.value); return; }
