@@ -429,3 +429,12 @@ button:disabled{opacity:.4}
 .lline{padding:8px 10px;border-radius:12px;margin-top:4px;transition:background .2s}
 .lline .len{font-size:18px}.lline .lko{font-size:16px;color:var(--sub)}
 .lline.on{background:#fff3b0}
+/* 팝송 단계 · 틀린 그림 찾기 */
+.sset{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.sset button{padding:10px 16px;border-radius:16px;background:#fff7e0;font-size:18px;box-shadow:0 3px 0 #f0d98a}
+.sset button.on{background:#ffd84d;box-shadow:0 3px 0 #d9b21f}
+.lyt{display:block;margin:4px 0 6px;font-size:16px;color:#c92a2a;text-decoration:none}
+.spotwrap{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.spotwrap canvas{width:100%;height:auto;border-radius:14px;box-shadow:0 3px 0 #eadfc6;touch-action:manipulation;background:#f4ecdc}
+.spotmid{text-align:center;font-size:15px;color:var(--sub)}
+.lvls.four{grid-template-columns:1fr 1fr}

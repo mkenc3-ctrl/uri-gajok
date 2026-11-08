@@ -122,76 +122,115 @@ function gugu(el, h){
 }
 
 /* ③ 영어 동요 번역 퀴즈 — 옛날부터 전해 오는 영어 동요(저작권 걱정 없는 노래)만 씀 */
-var SONGS = [
-  {s:'반짝반짝 작은 별', ic:'⭐', l:[
-    ['Twinkle, twinkle, little star', '반짝반짝 작은 별'],
-    ['How I wonder what you are', '네가 무엇인지 정말 궁금해'],
-    ['Up above the world so high', '세상 위 저 높은 곳에'],
-    ['Like a diamond in the sky', '하늘에 뜬 다이아몬드처럼']]},
-  {s:'노를 저어라', ic:'🚣', l:[
-    ['Row, row, row your boat', '노를 저어라, 네 배를'],
-    ['Gently down the stream', '시냇물을 따라 살살'],
-    ['Life is but a dream', '인생은 꿈일 뿐이야']]},
-  {s:'맥도날드 할아버지 농장', ic:'🐄', l:[
-    ['Old MacDonald had a farm', '맥도날드 할아버지는 농장이 있었어요'],
-    ['And on his farm he had a cow', '그 농장에는 소가 있었어요'],
-    ['With a moo moo here', '여기서도 음매 음매']]},
-  {s:'매애 매애 검은 양', ic:'🐑', l:[
-    ['Baa, baa, black sheep, have you any wool?', '매애 매애 검은 양아, 털 좀 있니?'],
-    ['Yes sir, yes sir, three bags full', '네, 네, 세 자루 가득 있어요']]},
-  {s:'머리 어깨 무릎 발', ic:'🙆', l:[
-    ['Head, shoulders, knees and toes', '머리, 어깨, 무릎, 발가락'],
-    ['Eyes and ears and mouth and nose', '눈이랑 귀랑 입이랑 코']]},
-  {s:'행복하면 손뼉을', ic:'👏', l:[
-    ["If you're happy and you know it, clap your hands", '행복하면 손뼉을 쳐요'],
-    ["If you're happy and you know it, stomp your feet", '행복하면 발을 쿵쿵 굴러요']]},
-  {s:'메리의 아기 양', ic:'🐏', l:[
-    ['Mary had a little lamb', '메리에게는 아기 양이 있었어요'],
-    ['Its fleece was white as snow', '그 털은 눈처럼 하얬어요']]},
-  {s:'런던 다리', ic:'🌉', l:[
-    ['London Bridge is falling down', '런던 다리가 무너지고 있어요'],
-    ['My fair lady', '나의 아름다운 아가씨']]},
-  {s:'비야 비야 저리 가', ic:'☔', l:[
-    ['Rain, rain, go away', '비야, 비야, 저리 가'],
-    ['Come again another day', '다른 날 다시 와'],
-    ['Little Johnny wants to play', '꼬마 조니가 놀고 싶대요']]},
-  {s:'존 형, 자고 있어요?', ic:'🔔', l:[
-    ['Are you sleeping, Brother John?', '존 형, 자고 있어요?'],
-    ['Morning bells are ringing', '아침 종이 울리고 있어요']]},
-  {s:'생쥐와 시계', ic:'🐭', l:[
-    ['The mouse ran up the clock', '생쥐가 시계 위로 올라갔어요'],
-    ['The clock struck one', '시계가 한 시를 쳤어요']]},
-  {s:'험프티 덤프티', ic:'🥚', l:[
-    ['Humpty Dumpty sat on a wall', '험프티 덤프티가 담 위에 앉았어요'],
-    ['Humpty Dumpty had a great fall', '험프티 덤프티가 쿵 떨어졌어요']]},
-  {s:'조그만 거미', ic:'🕷️', l:[
-    ['The itsy bitsy spider climbed up the water spout', '조그만 거미가 물받이를 기어 올라갔어요'],
-    ['Down came the rain and washed the spider out', '비가 내려서 거미를 씻어 내렸어요'],
-    ['Out came the sun and dried up all the rain', '해가 나와서 빗물을 다 말렸어요']]},
-  {s:'아기 원숭이 다섯 마리', ic:'🐒', l:[
-    ['Five little monkeys jumping on the bed', '아기 원숭이 다섯 마리가 침대에서 뛰어요'],
-    ['One fell off and bumped his head', '한 마리가 떨어져서 머리를 쿵 했어요'],
-    ['No more monkeys jumping on the bed!', '이제 침대에서 뛰면 안 돼!']]},
-  {s:'버스 바퀴', ic:'🚌', l:[
-    ['The wheels on the bus go round and round', '버스 바퀴가 빙글빙글 돌아요'],
-    ['All through the town', '온 동네를 돌아요']]}
+/* 인기 팝송: 가사는 저작권이 있어 넣지 않고, 제목(뜻 맞히기)과 유튜브 원곡 연결만 씀 */
+var HITS = [
+  ['Count on Me', '나를 믿고 기대도 돼', '브루노 마스', 'Bruno Mars'],
+  ['Just the Way You Are', '있는 그대로의 너', '브루노 마스', 'Bruno Mars'],
+  ['APT.', '아파트', '로제·브루노 마스', 'ROSE Bruno Mars'],
+  ['Perfect', '완벽해', '에드 시런', 'Ed Sheeran'],
+  ['Happy', '행복해', '퍼렐 윌리엄스', 'Pharrell Williams'],
+  ["Can't Stop the Feeling!", '이 기분을 멈출 수 없어', '저스틴 팀버레이크', 'Justin Timberlake'],
+  ['Let It Go', '다 놓아 버려', '겨울왕국', 'Frozen'],
+  ["How Far I'll Go", '내가 얼마나 멀리 갈 수 있을까', '모아나', 'Moana'],
+  ["We Don't Talk About Bruno", '브루노 얘기는 하지 않아', '엔칸토', 'Encanto'],
+  ['Golden', '황금빛', '케이팝 데몬 헌터스', 'KPop Demon Hunters'],
+  ['Dance Monkey', '춤추는 원숭이', '톤스 앤 아이', 'Tones And I'],
+  ['Permission to Dance', '춤춰도 된다는 허락', '방탄소년단', 'BTS'],
+  ['A Sky Full of Stars', '별이 가득한 하늘', '콜드플레이', 'Coldplay'],
+  ['Firework', '불꽃놀이', '케이티 페리', 'Katy Perry'],
+  ['Roar', '크게 울부짖어', '케이티 페리', 'Katy Perry'],
+  ['Shake It Off', '훌훌 털어 버려', '테일러 스위프트', 'Taylor Swift'],
+  ['Love Story', '사랑 이야기', '테일러 스위프트', 'Taylor Swift'],
+  ['Someone You Loved', '네가 사랑했던 사람', '루이스 카팔디', 'Lewis Capaldi'],
+  ['Memories', '추억들', '마룬 5', 'Maroon 5'],
+  ['Stay', '곁에 있어 줘', '키드 라로이·저스틴 비버', 'The Kid LAROI Justin Bieber'],
+  ['As It Was', '예전 그대로', '해리 스타일스', 'Harry Styles'],
+  ['Flowers', '꽃들', '마일리 사이러스', 'Miley Cyrus'],
+  ['Levitating', '둥둥 떠오르는', '두아 리파', 'Dua Lipa'],
+  ['Believer', '믿는 사람', '이매진 드래곤스', 'Imagine Dragons'],
+  ['Thunder', '천둥', '이매진 드래곤스', 'Imagine Dragons'],
+  ['Counting Stars', '별 세기', '원리퍼블릭', 'OneRepublic'],
+  ['See You Again', '다시 만나', '위즈 칼리파', 'Wiz Khalifa'],
+  ['Hall of Fame', '명예의 전당', '더 스크립트', 'The Script'],
+  ['2002', '2002년', '앤마리', 'Anne-Marie'],
+  ['Friends', '친구', '앤마리·마시멜로', 'Marshmello Anne-Marie'],
+  ['Happier', '더 행복한', '마시멜로', 'Marshmello'],
+  ['Sorry', '미안해', '저스틴 비버', 'Justin Bieber'],
+  ['Viva la Vida', '인생 만세', '콜드플레이', 'Coldplay']
 ];
+var SONGS = HITS.map(function(x){ return {s:x[2], ic:'🎤', yt:x[3]+' '+x[0]+' official', l:[[x[0], x[1]]]}; });
+/* 팝송 수준: 요즘 팝송 가사는 저작권이 있어 그대로 못 넣음 →
+   팝송에 자주 나오는 표현으로 직접 지은 문장 + 저작권이 끝난 옛 노래 */
+var POP = [
+  /* 2002(앤마리): 실제 가사는 저작권이 있어 넣지 않고, 노래 분위기(어린 시절 추억)에 맞춰 직접 지은 문장 + 원곡은 유튜브로 */
+  {s:'2002 — 앤마리 (추억 표현)', ic:'💿', yt:'Anne-Marie 2002 official', l:[
+    ['Those old songs take me back to my childhood', '그 옛날 노래들이 나를 어린 시절로 데려가'],
+    ['We knew every word of our favorite tunes', '우리는 좋아하는 노래 가사를 다 외웠어'],
+    ['Best friends forever, that was our promise', '영원한 단짝, 그게 우리 약속이었어'],
+    ['Growing up went by way too fast', '어른이 되는 건 너무 빨리 지나갔어'],
+    ['Whenever I hear that beat, I feel young again', '그 박자를 들을 때마다 다시 어려지는 기분이야']]},
+  {s:'꿈을 향해 (팝송 표현)', ic:'🌟', l:[
+    ["Don't let anybody tell you that you can't fly", '누구도 네가 날 수 없다고 말하게 두지 마'],
+    ["I'm chasing every dream I've ever had", '나는 꿈꿔 온 모든 꿈을 쫓고 있어'],
+    ["We're just getting started, so turn it up", '이제 막 시작이야, 그러니 소리를 키워'],
+    ["Even when the lights go down, I'll keep on shining", '불이 꺼져도 나는 계속 빛날 거야'],
+    ["Nothing's gonna stop us now", '이제 아무것도 우리를 막을 수 없어']]},
+  {s:'우정 (팝송 표현)', ic:'🤝', l:[
+    ["You've got my back and I've got yours", '너는 내 편이고 나도 네 편이야'],
+    ["No matter how far, I'll always be around", '아무리 멀어도 난 항상 곁에 있을게'],
+    ["We laughed until the sun came up", '우리는 해가 뜰 때까지 웃었어'],
+    ["Call me when you're feeling down", '기분이 우울할 때 나한테 전화해'],
+    ["Side by side, we'll make it through", '나란히 함께라면 우린 이겨 낼 거야']]},
+  {s:'여름밤 (팝송 표현)', ic:'🌃', l:[
+    ["The city lights are calling out my name", '도시의 불빛이 내 이름을 부르고 있어'],
+    ["Let's dance like nobody's watching", '아무도 안 보는 것처럼 춤추자'],
+    ["Tonight feels like it could last forever", '오늘 밤은 영원히 계속될 것 같아'],
+    ["Roll the windows down and sing along", '창문을 내리고 같이 따라 불러'],
+    ["I can't get this song out of my head", '이 노래가 머릿속에서 떠나질 않아']]},
+  {s:'용기 (팝송 표현)', ic:'🦁', l:[
+    ["I'm not afraid to fall anymore", '나는 이제 넘어지는 게 두렵지 않아'],
+    ["Every scar tells a story", '모든 상처에는 이야기가 있어'],
+    ["I'll get back up and try again", '나는 다시 일어나서 또 해 볼 거야'],
+    ["You're stronger than you think", '너는 생각보다 강해'],
+    ["Hold your head up high", '고개를 높이 들어']]},
+  {s:'야구장에 데려가 줘 (1908년 노래)', ic:'⚾', l:[
+    ['Take me out to the ball game', '나를 야구장에 데려가 줘'],
+    ['Buy me some peanuts and Cracker Jack', '땅콩이랑 과자 좀 사 줘'],
+    ["I don't care if I never get back", '다시 못 돌아와도 상관없어']]},
+  {s:'오! 수재너 (1848년 노래)', ic:'🪕', l:[
+    ["Oh! Susanna, oh don't you cry for me", '오 수재너, 나 때문에 울지 마'],
+    ["I come from Alabama with a banjo on my knee", '무릎에 밴조를 얹고 앨라배마에서 왔어요']]},
+  {s:'징글벨 (1857년 노래)', ic:'🔔', l:[
+    ['Dashing through the snow in a one-horse open sleigh', '말 한 마리가 끄는 썰매를 타고 눈 속을 달려요'],
+    ['Laughing all the way', '가는 내내 웃으면서'],
+    ['Oh what fun it is to ride', '타는 건 정말 신나요']]},
+  {s:'나의 보니 (옛 노래)', ic:'🌊', l:[
+    ['My Bonnie lies over the ocean', '나의 보니는 바다 건너에 있어요'],
+    ['Oh bring back my Bonnie to me', '오, 나의 보니를 내게 돌려줘요']]},
+  {s:'놀라운 은혜 (1779년 노래)', ic:'🕊️', l:[
+    ['I once was lost, but now am found', '나는 한때 길을 잃었지만 이제 찾았어요'],
+    ['Was blind, but now I see', '눈이 멀었지만 이제는 보여요']]}
+];
+var songSet = 'hit';
 function song(el, h){
-  var best = h.best('song');
-  el.innerHTML = '<div class="gintro"><div class="gbig">🎵</div><h2>영어 동요 번역 퀴즈</h2>'+
-    '<p>유명한 영어 동요 가사를 듣고<br><b>우리말 뜻</b>을 골라요! (10문제)</p>'+
+  var best = h.best('song'), SET = songSet==='pop' ? POP : SONGS;  // hit: 인기 팝송 제목 / pop: 팝송 표현 문장
+  el.innerHTML = '<div class="gintro"><div class="gbig">🎵</div><h2>인기 팝송 번역 퀴즈</h2>'+
+    '<div class="sset"><button class="'+(songSet==='hit'?'on':'')+'" data-set="hit">🎤 인기 팝송 제목</button><button class="'+(songSet==='pop'?'on':'')+'" data-set="pop">💬 팝송 표현 문장</button></div>'+
+    '<p>'+(songSet==='pop' ? '팝송에 자주 나오는 영어 표현을 듣고' : '인기 팝송 <b>제목</b>을 듣고')+'<br><b>우리말 뜻</b>을 골라요! (10문제)</p>'+
     '<div class="lvls two2"><button class="lvl" data-m="see"><span>📖</span><b>보고 맞히기</b><small>영어 글자가 보여요</small></button>'+
     '<button class="lvl" data-m="ear"><span>👂</span><b>듣고 맞히기</b><small>소리만 들어요 · 점수 2배</small></button></div>'+
-    '<button class="lvl lall" data-m="all"><span>🎧</span><b>노래 전체 듣기</b><small>영어 가사와 우리말 뜻을 처음부터 끝까지 들어요</small></button>'+
+    '<button class="lvl lall" data-m="all"><span>🎧</span><b>노래 전체 듣기</b><small>영어와 우리말 뜻을 차례로 듣고, 원곡은 유튜브로</small></button>'+
     (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
   el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); if(b.dataset.m==='all') listenAll(); else start(b.dataset.m); }; });
+  el.querySelectorAll('.sset button').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); songSet = b.dataset.set; song(el, h); }; });
 
   /* 노래 전체 듣기: 영어 한 줄 → 우리말 뜻 한 줄씩 차례로 읽어 줌 */
   function listenAll(){
     var html = '<div class="gbar"><span>🎧 노래 전체 듣기</span></div>'+
       '<button class="big lplay" id="lpall">▶ 모든 노래 연달아 듣기</button><button class="big ghost lplay" id="lpstop">⏹ 멈추기</button><div class="llist">';
-    SONGS.forEach(function(sg, i){
-      html += '<div class="lsong" id="ls'+i+'"><button class="lshd" data-i="'+i+'">'+sg.ic+' <b>'+esc(sg.s)+'</b><span>▶ 듣기</span></button>';
+    SET.forEach(function(sg, i){
+      html += '<div class="lsong" id="ls'+i+'"><button class="lshd" data-i="'+i+'">'+sg.ic+' <b>'+esc(sg.s)+'</b><span>▶ 듣기</span></button>'+
+        (sg.yt ? '<a class="lyt" href="https://www.youtube.com/results?search_query='+encodeURIComponent(sg.yt)+'" target="_blank" rel="noopener">▶ 원곡은 유튜브에서 듣기</a>' : '');
       sg.l.forEach(function(x, j){ html += '<div class="lline" id="ll'+i+'_'+j+'"><div class="len">'+esc(x[0])+'</div><div class="lko">'+esc(x[1])+'</div></div>'; });
       html += '</div>';
     });
@@ -201,7 +240,7 @@ function song(el, h){
     function play(list){
       var my = ++run; try{ speechSynthesis.cancel(); }catch(e){}
       var steps = [];
-      list.forEach(function(i){ SONGS[i].l.forEach(function(x, j){ steps.push({id:'ll'+i+'_'+j, t:x[0], lang:'en-US', rate:0.8}); steps.push({id:'ll'+i+'_'+j, t:x[1], lang:'ko-KR', rate:1}); }); });
+      list.forEach(function(i){ SET[i].l.forEach(function(x, j){ steps.push({id:'ll'+i+'_'+j, t:x[0], lang:'en-US', rate:0.8}); steps.push({id:'ll'+i+'_'+j, t:x[1], lang:'ko-KR', rate:1}); }); });
       var k = 0;
       (function next(){
         if(my!==run) return;
@@ -216,14 +255,14 @@ function song(el, h){
         }catch(e){ later(next, 1500); }
       })();
     }
-    el.querySelector('#lpall').onclick = function(){ play(SONGS.map(function(_, i){ return i; })); };
+    el.querySelector('#lpall').onclick = function(){ play(SET.map(function(_, i){ return i; })); };
     el.querySelector('#lpstop').onclick = function(){ run++; try{ speechSynthesis.cancel(); }catch(e){} mark(null); };
     el.querySelectorAll('.lshd').forEach(function(b){ b.onclick = function(){ play([+b.dataset.i]); }; });
   }
 
   function start(mode){
     var all = [];
-    SONGS.forEach(function(sg){ sg.l.forEach(function(x){ all.push({en:x[0], ko:x[1], s:sg.s, ic:sg.ic}); }); });
+    SET.forEach(function(sg){ sg.l.forEach(function(x){ all.push({en:x[0], ko:x[1], s:sg.s, ic:sg.ic}); }); });
     var qs = shuffle(all.slice()).slice(0, 10), qi = 0, right = 0, combo = 0, score = 0, lock = false;
     el.innerHTML = '<div class="gbar"><span>🎵 '+(mode==='ear'?'👂 듣고':'📖 보고')+' 맞히기</span><span id="sq">1 / 10</span><span id="ss">0점</span></div>'+
       '<div class="mprog"><i id="spb"></i></div><div class="songbox"><div class="stitle" id="st"></div>'+
@@ -271,14 +310,131 @@ function song(el, h){
   }
 }
 
+/* ④ 가족 사진 틀린 그림 찾기 — 아래 사진에서 바뀐 곳을 찾아 눌러요 */
+var SPOT_LV = [
+  // kinds: stk 그림 붙이기(잘 보임) · tint 색 바꾸기 · flip 좌우 뒤집기 · copy 다른 조각 덮기(잘 안 보임)
+  {ic:'🐣', nm:'쉬움',      n:3, r:0.12,  sec:90,  kinds:['stk'],                       tint:0.35, sub:'큰 그림 3개 · 90초'},
+  {ic:'🐥', nm:'보통',      n:5, r:0.09,  sec:100, kinds:['stk','tint','stk','flip'],   tint:0.25, sub:'5군데 · 100초'},
+  {ic:'🦅', nm:'어려움',    n:7, r:0.07,  sec:110, kinds:['tint','flip','copy','stk'],  tint:0.15, sub:'작게 7군데 · 110초'},
+  {ic:'🐉', nm:'아주 어려움', n:9, r:0.055, sec:120, kinds:['flip','copy','tint'],       tint:0.08, sub:'은근하게 9군데 · 120초'}
+];
+function spot(el, h){
+  var best = h.best('spot');
+  el.innerHTML = '<div class="gintro"><div class="gbig">🔎</div><h2>가족 사진 틀린 그림 찾기</h2>'+
+    '<p>위아래 두 사진에서 <b>다른 곳</b>을 찾아 눌러요!<br><small>빨리 찾을수록 점수가 높아요 · 막히면 💡 힌트</small></p>'+
+    '<div class="lvls four">'+SPOT_LV.map(function(L, i){ return '<button class="lvl" data-i="'+i+'"><span>'+L.ic+'</span><b>'+L.nm+'</b><small>'+L.sub+'</small></button>'; }).join('')+'</div>'+
+    (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
+  el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); load(SPOT_LV[+b.dataset.i]); }; });
+
+  function load(L){
+    var list = shuffle((h.photos||[]).slice());
+    if(!list.length){ el.innerHTML = '<div class="gintro"><p>사진이 아직 없어요 😢</p></div>'; return; }
+    el.innerHTML = '<div class="gintro"><p>사진 고르는 중…</p></div>';
+    var p = list[0], img = new Image();
+    img.onload = function(){ play(L, img, p); };
+    img.onerror = function(){ list.shift(); if(list.length){ p = list[0]; img.src = h.photoSrc(p.f); } else el.innerHTML = '<div class="gintro"><p>사진을 못 불러왔어요 😢</p></div>'; };
+    img.src = h.photoSrc(p.f);
+  }
+
+  function play(L, img, p){
+    var W = 600, H = Math.round(W * Math.min(0.85, Math.max(0.6, img.height/img.width)));
+    // 사진 가운데를 잘라 W×H에 맞춤
+    var sr = Math.max(W/img.width, H/img.height), sw = W/sr, sh = H/sr, sx = (img.width-sw)/2, sy = (img.height-sh)/2;
+    el.innerHTML = '<div class="gbar"><span>'+L.ic+' '+L.nm+'</span><span id="pt">⏱️ '+L.sec+'초</span><span id="pf">0 / '+L.n+'</span></div>'+
+      '<div class="mprog"><i id="ppb"></i></div><div class="spotwrap"><canvas id="ca" width="'+W+'" height="'+H+'"></canvas>'+
+      '<div class="spotmid">⬆️ 원래 사진 · 바뀐 사진 ⬇️</div><canvas id="cb" width="'+W+'" height="'+H+'"></canvas></div>'+
+      '<div class="qmsg" id="pm">다른 곳을 찾아 눌러요 🔍</div><button class="big ghost" id="phint">💡 힌트 (−50점)</button>';
+    var ca = el.querySelector('#ca'), cb = el.querySelector('#cb'), xa = ca.getContext('2d'), xb = cb.getContext('2d');
+    xa.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+    xb.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+    // 바꿀 곳 고르기 (서로 겹치지 않게, 가장자리 빼고)
+    var R = Math.round(W * L.r), diffs = [], tries = 0;
+    while(diffs.length < L.n && tries < 500){
+      tries++;
+      var d = {x: R + Math.random()*(W-2*R), y: R + Math.random()*(H-2*R)};
+      if(diffs.every(function(o){ return Math.hypot(o.x-d.x, o.y-d.y) > R*2.3; })) diffs.push(d);
+    }
+    var STK = ['⭐','🎈','🌸','🍎','🦋','🍀','🐞','🎀','🍩','🐥'], kinds = [];
+    while(kinds.length < L.n) kinds = kinds.concat(shuffle(L.kinds.slice()));
+    diffs.forEach(function(d, i){
+      var k = kinds[i % kinds.length], x0 = d.x-R, y0 = d.y-R, s = R*2;
+      xb.save(); xb.beginPath(); xb.arc(d.x, d.y, R, 0, Math.PI*2); xb.clip();
+      if(k==='stk'){
+        xb.font = Math.round(R*1.3)+'px sans-serif'; xb.textAlign = 'center'; xb.textBaseline = 'middle';
+        xb.fillText(STK[Math.floor(Math.random()*STK.length)], d.x, d.y);
+      } else if(k==='flip'){
+        xb.translate(d.x*2, 0); xb.scale(-1, 1);
+        xb.drawImage(ca, x0, y0, s, s, x0, y0, s, s);
+      } else if(k==='tint'){
+        xb.globalCompositeOperation = 'hue'; xb.globalAlpha = Math.min(1, L.tint*3);
+        xb.fillStyle = ['#ff0040','#00c853','#2962ff','#ffab00'][i%4]; xb.fillRect(x0, y0, s, s);
+        xb.globalCompositeOperation = 'source-over'; xb.globalAlpha = L.tint; xb.fillRect(x0, y0, s, s);
+      } else {
+        // 다른 곳의 조각을 덮어씌움
+        var ox = Math.random()*(W-s), oy = Math.random()*(H-s);
+        xb.drawImage(ca, ox, oy, s, s, x0, y0, s, s);
+      }
+      xb.restore();
+    });
+    var found = 0, miss = 0, hints = 0, left = L.sec, over = false, t0 = Date.now();
+    function ring(ctx, d, col){ ctx.save(); ctx.lineWidth = 6; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(d.x, d.y, R*1.05, 0, Math.PI*2); ctx.stroke(); ctx.restore(); }
+    function tap(e){
+      if(over) return;
+      var c = e.currentTarget, rc = c.getBoundingClientRect();
+      var x = (e.clientX - rc.left) * W / rc.width, y = (e.clientY - rc.top) * H / rc.height;
+      var hit = diffs.filter(function(d){ return !d.ok && Math.hypot(d.x-x, d.y-y) < R*1.25; })[0];
+      var m = el.querySelector('#pm');
+      if(hit){
+        hit.ok = true; found++; ring(xa, hit, '#ff3b5c'); ring(xb, hit, '#ff3b5c'); h.sfx('ok');
+        el.querySelector('#pf').textContent = found+' / '+L.n;
+        el.querySelector('#ppb').style.width = (found/L.n*100)+'%';
+        m.textContent = ['⭕ 찾았다!','👍 좋아요!','🎯 정확해요!','✨ 대단해요!'][found%4];
+        if(found===L.n) end(true);
+      } else {
+        miss++; h.sfx('no'); m.textContent = '❌ 거기는 아니에요';
+        try{ if(navigator.vibrate) navigator.vibrate(80); }catch(e2){}
+      }
+    }
+    ca.addEventListener('pointerdown', tap); cb.addEventListener('pointerdown', tap);
+    el.querySelector('#phint').onclick = function(){
+      if(over) return;
+      var d = diffs.filter(function(o){ return !o.ok; })[0]; if(!d) return;
+      hints++; h.sfx('tap');
+      var n = 0, iv = every(function(){
+        n++; xb.save(); xb.globalAlpha = 0.6; ring(xb, d, n%2 ? '#ffd84d' : '#ffffff'); xb.restore();
+        if(n>=4){ clearInterval(iv); }
+      }, 250);
+      el.querySelector('#pm').textContent = '💡 노란 동그라미 근처를 봐요!';
+    };
+    every(function(){
+      if(over) return;
+      left = L.sec - Math.floor((Date.now()-t0)/1000);
+      el.querySelector('#pt').textContent = '⏱️ '+Math.max(0, left)+'초';
+      if(left<=0) end(false);
+    }, 500);
+    function end(win){
+      over = true;
+      diffs.forEach(function(d){ if(!d.ok){ ring(xa, d, '#2f9e44'); ring(xb, d, '#2f9e44'); } });
+      var sec = Math.floor((Date.now()-t0)/1000);
+      var score = Math.max(0, found*100 + (win ? Math.max(0, L.sec-sec)*3 : 0) - miss*15 - hints*50);
+      if(win) h.confetti(30);
+      later(function(){
+        stopAll();
+        h.done('spot', score, true, (win ? '🏆 '+L.n+'군데 모두 찾았어요! ' : '⏰ 시간이 다 됐어요. '+found+'군데 찾았어요. ')+score+'점');
+      }, win ? 1600 : 2600);
+    }
+  }
+}
+
 window.Games = {
   list: [
     {k:'pmatch', ic:'🧠', nm:'가족 사진 짝 맞추기', how:'쉬움·보통·어려움 · 처음에 잠깐 보여 줘요', unit:'점', high:true},
-    {k:'song',   ic:'🎵', nm:'영어 동요 번역 퀴즈', how:'영어 동요 가사를 듣고 뜻 맞히기',       unit:'점', high:true},
+    {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 3단계', unit:'점', high:true},
+    {k:'song',   ic:'🎤', nm:'인기 팝송 번역 퀴즈', how:'팝송 제목·표현 뜻 맞히기 · 전체 듣기',       unit:'점', high:true},
     {k:'gugu',   ic:'✖️', nm:'구구단 퀴즈',         how:'60초 동안 몇 개 맞힐까?',               unit:'개', high:true}
   ],
   start: function(name, el, h){ stopAll(); if(!h.sfx) h.sfx = function(){};
-    ({pmatch:memory, song:song, gugu:gugu})[name](el, h); },
+    ({pmatch:memory, spot:spot, song:song, gugu:gugu})[name](el, h); },
   stop: stopAll
 };
 })();
