@@ -518,3 +518,24 @@ body.hasnav #nav{display:flex}
 .qnote{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
 .qnote button{padding:6px 10px;border-radius:999px;background:#fff7e0;font-size:15px;box-shadow:0 2px 0 #f0d98a}
 .qnote button.on{background:#ffd84d}
+/* 사진 더 많이: 사진 띠 · 슬라이드쇼 · 띠 배경 */
+.hero{background-color:var(--me)}
+.hero .nm,.hero .ttl,.hero .nums{text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.pstrip{margin:14px 0}
+.pshd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pshd b{font-weight:400;font-size:19px}
+.pshd button,.slidebtn{background:#fff;border-radius:999px;padding:6px 12px;font-size:15px;box-shadow:0 2px 0 var(--line)}
+.slidebtn{float:right;margin-top:-2px}
+.psrow{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.psimg{flex:none;width:118px;height:118px;border-radius:18px;overflow:hidden;padding:0;box-shadow:0 3px 0 var(--line);scroll-snap-align:start;background:#f4ecdc}
+.psimg img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.psimg:active img{transform:scale(.95)}
+.album{cursor:pointer}
+.slides{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column}
+.sstage{position:relative;flex:1;overflow:hidden}
+.sstage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity 1s;transform:scale(1.0)}
+.sstage img.on{opacity:1;animation:kb 6s ease-out forwards}
+@keyframes kb{from{transform:scale(1.0)}to{transform:scale(1.08)}}
+.scap{color:#fff;text-align:center;font-size:19px;padding:10px 12px 4px}
+.sctl{display:flex;justify-content:center;gap:10px;padding:8px 8px calc(14px + env(safe-area-inset-bottom))}
+.sctl button{background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:10px 18px;font-size:19px}

@@ -568,7 +568,7 @@ var albumT, albumI = 0;
 function albumHtml(){
   if(!PHOTOS.length) return '';
   if(albumI>=PHOTOS.length) albumI = 0;
-  var h = '<div class="album" id="album">';
+  var h = '<div class="album" id="album" data-act="slide" data-v="0">';
   PHOTOS.forEach(function(p,i){ h += '<img src="'+photoSrc(p.f)+'" alt="'+esc(p.cap)+'" class="'+(i===albumI?'on':'')+'"'+(i===albumI?'':' loading="lazy"')+'>'; });
   return h + '<div class="cap" id="albumcap">📸 '+esc(PHOTOS[albumI].cap)+'</div></div>';
 }
@@ -590,6 +590,52 @@ function pageHd(ic, title, sub, bg){
     (ph?'<div class="polaroid"><img src="'+photoSrc(ph)+'" alt=""></div>':'')+'</div>';
 }
 function stIcon(s){ return s==='ok'?'✅':s==='wait'?'⏳':s==='no'?'↩️':'⬜'; }
+/* 사진 더 많이 보이기 */
+function hashStr(t){ var h = 0; for(var i=0;i<t.length;i++){ h = (h*31 + t.charCodeAt(i)) | 0; } return Math.abs(h); }
+// 오늘 날짜로 섞은 사진 순서 (하루 동안은 그대로, 날마다 바뀜)
+function dayPhotos(salt){ var td = today()+(salt||''); return PHOTOS.slice().sort(function(a,b){ return hashStr(a.f+td) - hashStr(b.f+td); }); }
+function heroBg(mb, col){
+  var list = dayPhotos(mb.id); if(!list.length) return col ? ' style="background:'+col+'"' : '';
+  var c = col || mb.color || '#ff9a2e';
+  return ' style="background:linear-gradient(120deg,'+c+'f2 0%,'+c+'c0 45%,'+c+'40 100%),url('+photoSrc(list[0].f)+') center 30%/cover"';
+}
+function stripHtml(title, n){
+  var list = dayPhotos('strip'); if(!list.length) return '';
+  var h = '<div class="pstrip"><div class="pshd"><b>'+(title||'📷 우리 가족 사진')+'</b><button data-act="slide" data-v="0">📺 크게 보기</button></div><div class="psrow">';
+  list.slice(0, n||12).forEach(function(p, i){ h += '<button class="psimg" data-act="slide" data-v="'+i+'"><img src="'+photoSrc(p.f)+'" alt="'+esc(p.cap)+'" loading="lazy"></button>'; });
+  return h + '</div></div>';
+}
+/* 사진 크게 보기: 자동으로 넘어가는 슬라이드쇼 */
+var slideT = null;
+function slideshow(start){
+  var list = dayPhotos('strip'); if(!list.length) return;
+  var i = Math.max(0, Math.min(list.length-1, +start||0)), playing = true;
+  var o = document.createElement('div'); o.className = 'slides';
+  o.innerHTML = '<div class="sstage"></div><div class="scap"></div><div class="sctl"><button data-s="prev">◀</button><button data-s="play">⏸</button><button data-s="next">▶</button><button data-s="close">✕ 닫기</button></div>';
+  document.body.appendChild(o);
+  var stage = o.querySelector('.sstage');
+  function show(){
+    var p = list[i], im = document.createElement('img');
+    im.src = photoSrc(p.f); im.alt = p.cap; im.className = 'sin';
+    stage.appendChild(im);
+    setTimeout(function(){ im.classList.add('on'); }, 30);
+    var old = stage.querySelectorAll('img'); if(old.length>2) old[0].remove();
+    setTimeout(function(){ var olds = stage.querySelectorAll('img'); if(olds.length>1) olds[0].classList.remove('on'); }, 40);
+    o.querySelector('.scap').textContent = '📸 '+p.cap+'  ('+(i+1)+' / '+list.length+')';
+  }
+  function next(d){ i = (i + (d||1) + list.length) % list.length; show(); }
+  function loop(){ clearInterval(slideT); if(playing) slideT = setInterval(function(){ next(1); }, 4500); }
+  function close(){ clearInterval(slideT); o.remove(); }
+  o.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b){ next(1); loop(); return; }
+    var a = b.getAttribute('data-s');
+    if(a==='close') close();
+    else if(a==='prev'){ next(-1); loop(); }
+    else if(a==='next'){ next(1); loop(); }
+    else if(a==='play'){ playing = !playing; b.textContent = playing ? '⏸' : '▶️'; loop(); }
+  });
+  show(); loop();
+}
 function memoryHtml(){
   var mp = V.tmp.mem || (V.tmp.mem = randPhoto());
   if(!mp) return '';
@@ -630,7 +676,7 @@ function feedHtml(max){
 function vHome(){
   var wait = waiting().length;
   var h = '<div class="top"><h1>🏠 우리 가족 하루</h1><button class="gear" data-act="voice" aria-label="음성 안내 켜고 끄기">'+(voiceOn()?'🗣️':'🤐')+'</button><button class="gear" data-act="snd" aria-label="소리 켜고 끄기">'+(soundOn()?'🔊':'🔇')+'</button><button class="gear" data-act="refresh" aria-label="새로고침">🔄</button><button class="gear" data-act="settings" aria-label="가족 설정">⚙️</button></div>'+
-    urgentHtml(null) + '<div class="date">'+koDate()+'</div>';
+    urgentHtml(null) + '<div class="date">'+koDate()+'</div>' + stripHtml('📷 오늘의 가족 사진', 12);
   var lastMe = null; try{ lastMe = mem(localStorage.getItem('fam-last')); }catch(e){}
   if(lastMe) h += '<button class="quickme" data-act="pick" data-id="'+lastMe.id+'">'+mini(lastMe)+' <b>'+esc(lastMe.name)+'</b> 화면으로 바로 가기'+(unread(lastMe.id)?' <span class="nb">💬 '+unread(lastMe.id)+'</span>':'')+' ›</button>';
   h += '<button class="whoagain" data-act="who">👋 나는 누구? 이 휴대폰 주인 고르기</button>';
@@ -672,7 +718,7 @@ function vHome(){
       (r.note?'<span class="pnote">💬 '+esc(r.by||'부모님')+': '+esc(r.note)+'</span>':'')+'</div></div>';
   });
   h += '</div>'; if(!PHOTOS.length) return h;
-  h += '<div class="board"><h2>📷 우리 가족 추억 사진첩</h2><div class="gallery">';
+  h += '<div class="board"><h2>📷 우리 가족 추억 사진첩 <button class="slidebtn" data-act="slide" data-v="0">📺 크게 보기</button></h2><div class="gallery">';
   PHOTOS.forEach(function(p){ h += '<img src="'+photoSrc(p.f)+'" alt="'+esc(p.cap)+'" loading="lazy" data-act="zoom" data-v="'+photoSrc(p.f)+'">'; });
   return h + '</div></div>';
 }
@@ -684,15 +730,15 @@ function vKid(me){
   var outNow = d.outs.filter(function(o){return !o.end;})[0];
   var freeNow = d.free.filter(function(f){return !f.end;})[0];
   var h = backBar('home')+
-    '<div class="hero"><div class="row"><div class="ava">'+bigFace(me)+'</div><div><div class="nm">'+esc(me.name)+'</div>'+
+    '<div class="hero"'+heroBg(me)+'><div class="row"><div class="ava">'+bigFace(me)+'</div><div><div class="nm">'+esc(me.name)+'</div>'+
     '<div class="ttl">레벨 '+lv+' · '+levelName(lv)+(me.grade?' · '+esc(me.grade):'')+'</div></div></div>'+
     '<div class="bar"><i style="width:'+into+'%"></i></div>'+
     '<div class="nums"><span>모은 점수 '+st.points+'점</span><span>다음 레벨까지 '+(PER_LEVEL-into)+'점</span></div>'+
     '<div class="chips"><span class="chip">🪙 코인 '+(st.coins||0)+'</span><span class="chip">🔥 연속 '+st.streak+'일</span><span class="chip">🎖️ 배지 '+st.badges.length+'개</span>'+
     (myWait?'<span class="chip">⏳ 확인 기다리는 중 '+myWait+'개</span>':'')+'</div></div>';
 
-  h = h.replace('<div class="hero">', urgentHtml(me)+'<div class="hero">');
-  h += nextHtml(me, d, open, freeNow) + msgNotice(me) + petHtml(me.id);
+  h = h.replace('<div class="hero"', urgentHtml(me)+'<div class="hero"');
+  h += nextHtml(me, d, open, freeNow) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) + petHtml(me.id);
   // 부모님 답장
   var notes = S.reqs.filter(function(r){ return r.kid===me.id && r.st!=='wait' && !r.seen; }).slice(-5).reverse();
   if(notes.length){
@@ -1043,9 +1089,9 @@ function repSend(me){
 function vParent(me){
   var list = waiting();
   var h = backBar('home')+
-    '<div class="hero"><div class="row"><div class="ava">'+bigFace(me)+'</div><div><div class="nm">'+esc(me.name)+'</div>'+
+    '<div class="hero"'+heroBg(me)+'><div class="row"><div class="ava">'+bigFace(me)+'</div><div><div class="nm">'+esc(me.name)+'</div>'+
     '<div class="ttl">'+esc(me.role)+' · 보고 확인 담당</div></div></div>'+
-    '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + msgNotice(me) +
+    '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) +
     '<button class="wide urgentbtn" data-act="urgent">🚨 긴급 공지 올리기</button>'+
     '<button class="wide chatbtn" data-act="chat">💬 가족 대화방'+(unread(me.id)?' <span class="nb">'+unread(me.id)+'</span>':'')+'</button>';
 
@@ -1077,7 +1123,7 @@ function vParent(me){
 }
 function vKidView(me){
   var k = mem(V.kid), d = peekDay(k.id);
-  var h = backBar() + '<div class="hero" style="background:'+k.color+'"><div class="row"><div class="ava">'+bigFace(k)+'</div><div><div class="nm">'+esc(k.name)+'</div>'+
+  var h = backBar() + '<div class="hero"'+heroBg(k)+'><div class="row"><div class="ava">'+bigFace(k)+'</div><div><div class="nm">'+esc(k.name)+'</div>'+
     '<div class="ttl">레벨 '+level(S.m[k.id].points)+' · '+S.m[k.id].points+'점 · 🔥 연속 '+S.m[k.id].streak+'일</div></div></div></div>';
   h += '<div class="section"><h2>🎯 오늘의 미션</h2>';
   MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+(ms.st==='ok' && !(me && me.kid) ? '<button class="redo" data-act="redo" data-v="'+m.k+'">↩ 다시 하세요</button>' : '')+
@@ -1357,6 +1403,7 @@ app.addEventListener('click', function(e){
       var qi = document.getElementById('note_'+b.getAttribute('data-id'));
       if(qi){ qi.value = v; document.querySelectorAll('.qnote button[data-id="'+b.getAttribute('data-id')+'"]').forEach(function(x){ x.classList.toggle('on', x===b); }); }
       break;
+    case 'slide': slideshow(v); break;
     case 'redo':
       if(me && !me.kid && V.kid){
         var rm = MISSIONS.filter(function(x){ return x.k===v; })[0];
