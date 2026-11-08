@@ -483,3 +483,29 @@ body.hasnav #nav{display:flex}
 .whoagain{display:block;width:100%;margin:8px 0;padding:10px;border-radius:16px;background:#fff;border:2px dashed #c9b98a;font-size:16px}
 .whof{font-size:60px;line-height:1}.whof img{border-radius:50%;object-fit:cover;display:block}
 .refresh{background:#fff;border-radius:999px;padding:8px 14px;font-size:16px;box-shadow:0 3px 0 var(--line)}.refresh:active{transform:translateY(2px)}
+/* 주간 성적표 · 집중 타이머 · 바로 완료 */
+.wkrow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}
+.wkd{text-align:center;font-size:14px;color:var(--sub)}
+.wkd b{display:block;font-weight:400;font-size:16px;color:#333}
+.wkd.today b{color:#e8590c}
+.wkbar{height:64px;background:#f4ecdc;border-radius:10px;margin:4px auto;width:70%;display:flex;align-items:flex-end;overflow:hidden}
+.wkbar i{display:block;width:100%;background:linear-gradient(#ffd84d,#ff9a2e);border-radius:10px 10px 0 0}
+.wkd.today .wkbar{outline:2px solid #ff9a2e}
+.wksum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;text-align:center}
+.wksum div{background:#fff7e0;border-radius:16px;padding:10px 4px;font-size:15px}
+.wksum b{font-weight:400;font-size:26px;color:#e8590c}
+.wksum small{display:block;color:var(--sub);font-size:13px}
+.wkmsg{text-align:center;margin-top:10px;font-size:17px}
+.wktab{width:100%;border-collapse:collapse;margin-top:8px;font-size:15px;text-align:center}
+.wktab th{font-weight:400;color:var(--sub);font-size:13px;padding:4px}
+.wktab td{padding:8px 4px;border-top:2px dashed var(--line)}
+.wktab td:first-child{text-align:left;white-space:nowrap}
+.focus{background:#eef4ff;border-radius:20px;padding:12px 14px;margin:12px 0}
+.focus .fhd{font-size:18px}.focus .fhd small{color:var(--sub);font-size:14px}
+.fpick{display:flex;gap:8px;margin-top:8px}
+.fpick button{flex:1;padding:12px 0;border-radius:14px;background:#4f8cff;color:#fff;font-size:19px;box-shadow:0 3px 0 #2f6bdc}
+.focus.on{text-align:center;background:linear-gradient(135deg,#4f8cff,#6fb2ff);color:#fff}
+.ftime{font-size:54px;letter-spacing:2px;margin:4px 0}
+.fbar{height:10px;background:rgba(255,255,255,.35);border-radius:6px;overflow:hidden;margin-bottom:10px}
+.fbar i{display:block;height:100%;background:#fff}
+.direct{display:inline-block;margin:6px 0 2px 28px;padding:8px 14px;border-radius:14px;background:#e6fcf5;color:#087f5b;font-size:17px;box-shadow:0 3px 0 #b2f2d9}

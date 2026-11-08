@@ -372,6 +372,16 @@ function decide(reqId, ok, note, parent){
 }
 
 /* 이미 수락한 미션도 부모님이 「다시 하세요」로 돌려보낼 수 있어요 (받은 점수는 돌려받음) */
+/* 아이가 보고하지 않아도 부모님이 직접 완료 처리 (점수도 줌) */
+function directMission(kidId, k, parent){
+  var m = MISSIONS.filter(function(x){ return x.k===k; })[0], kid = mem(kidId); if(!m || !kid) return;
+  var r = S.reqs.filter(function(x){ return x.kid===kidId && x.type==='mission' && x.ref===k && x.ds===today() && x.st==='wait'; })[0];
+  if(!r){
+    r = {id:uid(), kid:kidId, type:'mission', ds:today(), ref:k, text:m.ic+' '+m.nm+' (부모님이 확인)', st:'wait', t:Date.now()};
+    S.reqs.push(r); day(kidId).miss[k] = {st:'wait', t:Date.now()};
+  }
+  decide(r.id, true, '', parent);
+}
 function redoMission(kidId, k, parent, note){
   var d = day(kidId), ms = d.miss[k], st = S.m[kidId], kid = mem(kidId);
   if(!ms || ms.st!=='ok' || !kid) return;
@@ -711,7 +721,7 @@ function vKid(me){
     '<div class="'+(s.miss?'on':'')+'"><b>⭐</b>미션 완료</div><div class="'+(s.out?'on':'')+'"><b>⭐</b>외출 약속</div>'+
     '<div class="'+(s.free?'on':'')+'"><b>⭐</b>자유시간</div><div class="'+(s.rep?'on':'')+'"><b>⭐</b>마감 보고</div></div></div>';
 
-  h += calHtml(me.id);
+  h += weekHtml(me.id) + calHtml(me.id);
   h += '<div class="section"><h2>🎖️ 내 배지</h2><div class="badges">';
   BADGES.forEach(function(b){ var on = st.badges.indexOf(b.id)>=0; h += '<div class="bdg'+(on?' on':'')+'" title="'+esc(b.how)+'"><b>'+b.ic+'</b>'+b.nm+'</div>'; });
   h += '</div></div>' + memoryHtml() + logHtml(me.id) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
@@ -804,6 +814,7 @@ function vHw(me){
   else if(ms.st==='no') h += '<div class="nobox">↩️ 다시 해 봐요'+(ms.note?' — 「'+esc(ms.note)+'」':'')+'</div>';
   if(d.hw.length) h += '<div class="prog">'+done+' / '+d.hw.length+' 끝냈어요 '+(done===d.hw.length?'🎉':'💪')+'<div class="bar"><i style="width:'+Math.round(done*100/d.hw.length)+'%"></i></div></div>';
   var lock = ms.st==='ok' || ms.st==='wait';
+  if(!lock) h += focusHtml();
   h += '<ul class="hwlist">';
   d.hw.forEach(function(x){
     h += '<li class="hw'+(x.done?' done':'')+'"><button class="ck" data-act="hwck" data-v="'+x.id+'"'+(lock?' disabled':'')+' aria-label="끝냈어요">'+(x.done?'✔':'')+'</button>'+
@@ -826,6 +837,34 @@ function vHw(me){
   return h;
 }
 
+/* 숙제 집중 타이머: 화면을 옮겨도 계속 돌아가요 */
+var focus = null, focusT = null;
+function focusHtml(){
+  if(focus){
+    var left = Math.max(0, focus.end - Date.now());
+    return '<div class="focus on"><div class="fhd">⏱️ 집중하는 중… 화이팅!</div><div class="ftime" id="ftime">'+fmtLeft(left)+'</div>'+
+      '<div class="fbar"><i id="fbar" style="width:'+Math.round(100 - left*100/(focus.min*60000))+'%"></i></div>'+
+      '<button class="mbtn ghost" data-act="fstop">그만하기</button></div>';
+  }
+  return '<div class="focus"><div class="fhd">⏱️ 집중 타이머 <small>시간을 정하고 숙제에 집중해요</small></div><div class="fpick">'+
+    [10,20,30].map(function(n){ return '<button data-act="fstart" data-v="'+n+'">'+n+'분</button>'; }).join('')+'</div></div>';
+}
+function fmtLeft(ms){ var s = Math.ceil(ms/1000); return pad(Math.floor(s/60))+':'+pad(s%60); }
+function focusTick(){
+  clearInterval(focusT); if(!focus) return;
+  focusT = setInterval(function(){
+    if(!focus){ clearInterval(focusT); return; }
+    var left = focus.end - Date.now(), el = document.getElementById('ftime'), b = document.getElementById('fbar');
+    if(el) el.textContent = fmtLeft(Math.max(0, left));
+    if(b) b.style.width = Math.round(100 - Math.max(0,left)*100/(focus.min*60000))+'%';
+    if(left <= 0){
+      var mn = focus.min; focus = null; clearInterval(focusT);
+      sfx('fan'); confetti(30); try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){}
+      toast('🎉 '+mn+'분 집중 끝! 정말 잘했어요', {title:'집중 타이머', kind:'ok', long:true, sys:true, say:mn+'분 집중 끝! 정말 잘했어요. 잠깐 쉬어요.'});
+      if(V.screen==='hw') render();
+    }
+  }, 500);
+}
 /* 외출 */
 function vOut(me){
   var d = day(me.id), now = d.outs.filter(function(o){return !o.end;})[0];
@@ -1011,7 +1050,7 @@ function vParent(me){
     h += '</div><div class="tm">'+(outNow?'🚶 '+esc(outNow.place)+'에 외출 중 · ':'')+(freeNow?'🎮 자유시간 중 · ':freeOpen(k.id)?'🎮 자유시간 열림 · ':'')+
       '🌙 '+(d.report?(d.report.st==='ok'?'마감 완료':d.report.st==='wait'?'마감 확인 대기':'마감 다시 쓰는 중'):'마감 전')+'</div></div><span class="arrow">›</span></button>';
   });
-  h += '</div>' + askHtml() + '<button class="wide" data-act="praise">💌 아이에게 칭찬 보내기</button>'+
+  h += '</div>' + weekAllHtml() + askHtml() + '<button class="wide" data-act="praise">💌 아이에게 칭찬 보내기</button>'+
     '<button class="wide" data-act="games">🕹️ 게임방 (아이들과 기록 겨루기)</button>' + memoryHtml() + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
 }
@@ -1020,8 +1059,9 @@ function vKidView(me){
   var h = backBar() + '<div class="hero" style="background:'+k.color+'"><div class="row"><div class="ava">'+bigFace(k)+'</div><div><div class="nm">'+esc(k.name)+'</div>'+
     '<div class="ttl">레벨 '+level(S.m[k.id].points)+' · '+S.m[k.id].points+'점 · 🔥 연속 '+S.m[k.id].streak+'일</div></div></div></div>';
   h += '<div class="section"><h2>🎯 오늘의 미션</h2>';
-  MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+(ms.st==='ok' && !(me && me.kid) ? '<button class="redo" data-act="redo" data-v="'+m.k+'">↩ 다시 하세요</button>' : '')+'</div>'; });
-  h += '</div><div class="section"><h2>✏️ 숙제 목록</h2>';
+  MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+(ms.st==='ok' && !(me && me.kid) ? '<button class="redo" data-act="redo" data-v="'+m.k+'">↩ 다시 하세요</button>' : '')+
+    (ms.st!=='ok' && !(me && me.kid) ? '<button class="direct" data-act="direct" data-v="'+m.k+'">👍 바로 완료</button>' : '')+'</div>'; });
+  h += '</div>' + weekHtml(k.id) + '<div class="section"><h2>✏️ 숙제 목록</h2>';
   if(!d.hw.length) h += '<div class="empty">적은 숙제가 없어요</div>';
   d.hw.forEach(function(x){ h += '<div class="vrow">'+(x.done?'✔️':'⬜')+' '+esc(x.t)+'</div>'; });
   h += '</div><div class="section"><h2>🚶 외출</h2>';
@@ -1112,7 +1152,7 @@ function reqAlert(r, oldSt){
     sfx('pop'); try{ if(navigator.vibrate) navigator.vibrate(150); }catch(e){}
     toast('📥 '+kid.name+': '+r.text, {title:'새 보고가 왔어요', face:face(kid), kind:'send', sys:true, long:true,
       say: kid.name+'이 '+r.text+' 보고를 보냈어요. 확인해 주세요.'});
-  } else if(oldSt && oldSt!==r.st && r.st!=='wait'){
+  } else if((oldSt===null || (oldSt && oldSt!==r.st)) && r.st!=='wait'){
     if(me && me.kid && me.id!==r.kid) return;
     if(me && !me.kid) return;                                   // 다른 부모님이 처리한 것은 조용히
     var ok = r.st==='ok';
@@ -1284,6 +1324,14 @@ app.addEventListener('click', function(e){
     case 'cst': cSend(me, v, true); break;
     case 'cdel': var gm = byId(S.msgs, v); if(gm && gm.from===me.id && confirm('이 쪽지를 지울까요?')){ S.msgs = S.msgs.filter(function(g){ return g.id!==v; }); save(); render(); } break;
     case 'kidview': V.kid = v; go('kid'); break;
+    case 'direct':
+      if(me && !me.kid && V.kid){
+        var dm = MISSIONS.filter(function(x){ return x.k===v; })[0];
+        if(confirm('「'+dm.nm+'」을(를) 바로 완료로 할까요? (+'+dm.pts+'점)')){ directMission(V.kid, v, me); render(); }
+      }
+      break;
+    case 'fstart': focus = {min:+v, end:Date.now() + (+v)*60000}; focusTick(); render(); say(v+'분 집중 시작! 화이팅!'); break;
+    case 'fstop': focus = null; clearInterval(focusT); render(); toast('타이머를 멈췄어요', {say:false}); break;
     case 'redo':
       if(me && !me.kid && V.kid){
         var rm = MISSIONS.filter(function(x){ return x.k===v; })[0];
@@ -1437,6 +1485,33 @@ function sfx(kind){
 }
 
 /* ---------- 이번 달 도장판 ---------- */
+/* 이번 주 성적표: 최근 7일 */
+function weekDays(){ var a = [], ds = today(); for(var i=0;i<7;i++){ a.unshift(ds); ds = dayBefore(ds); } return a; }
+function weekStat(id){
+  var days = weekDays(), since = new Date(days[0]+'T00:00:00').getTime(), st = S.m[id];
+  var r = {days:days, full:0, star:0, miss:0, pts:0, rep:0};
+  days.forEach(function(ds){ var s = stars(id, ds); r.star += (s.miss?1:0)+(s.out?1:0)+(s.free?1:0)+(s.rep?1:0); r.miss += missOkCount(id, ds); if(s.miss) r.full++; if(s.rep) r.rep++; });
+  (st.log||[]).forEach(function(l){ if(l.t>=since && !l.coin) r.pts += l.n; });
+  return r;
+}
+function weekHtml(id){
+  var w = weekStat(id), td = today();
+  var h = '<div class="section week"><h2>📊 이번 주 성적표 <small class="tm">최근 7일</small></h2><div class="wkrow">';
+  w.days.forEach(function(ds){
+    var mc = missOkCount(id, ds), s = stars(id, ds), sc = (s.miss?1:0)+(s.out?1:0)+(s.free?1:0)+(s.rep?1:0);
+    var p = ds.split('-'), wd = '일월화수목금토'.charAt(new Date(+p[0], +p[1]-1, +p[2]).getDay());
+    h += '<div class="wkd'+(ds===td?' today':'')+'"><b>'+wd+'</b><div class="wkbar"><i style="height:'+(mc*25)+'%"></i></div><span>'+(sc>=4?'🏆':sc?'⭐'+sc:'·')+'</span></div>';
+  });
+  h += '</div><div class="wksum"><div><b>'+w.full+'</b>일<small>미션 모두 완료</small></div><div><b>'+w.star+'</b>개<small>모은 별</small></div><div><b>'+w.pts+'</b>점<small>받은 점수</small></div></div>';
+  var msg = w.full>=6 ? '🏆 이번 주 최고예요! 정말 대단해요' : w.full>=4 ? '🌟 아주 잘하고 있어요!' : w.full>=2 ? '💪 조금만 더 힘내요!' : '🌱 이번 주도 하나씩 해 봐요!';
+  return h + '<div class="wkmsg">'+msg+'</div></div>';
+}
+function weekAllHtml(){
+  var arr = kids().map(function(k){ return {k:k, w:weekStat(k.id)}; });
+  var h = '<div class="section"><h2>📊 이번 주 아이들 성적표 <small class="tm">최근 7일</small></h2><table class="wktab"><tr><th></th><th>미션 완료</th><th>별</th><th>점수</th><th>마감 보고</th></tr>';
+  arr.forEach(function(a){ h += '<tr><td>'+mini(a.k)+' '+esc(a.k.name)+'</td><td>'+a.w.full+'일</td><td>⭐'+a.w.star+'</td><td>'+a.w.pts+'</td><td>'+a.w.rep+'일</td></tr>'; });
+  return h + '</table></div>';
+}
 function calHtml(id){
   var now = new Date(), y = now.getFullYear(), m = now.getMonth(), first = new Date(y, m, 1).getDay(), last = new Date(y, m+1, 0).getDate(), td = today(), cnt = 0;
   var h = '<div class="grid7">'+'일월화수목금토'.split('').map(function(w){ return '<span class="wd">'+w+'</span>'; }).join('');
