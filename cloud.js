@@ -60,6 +60,11 @@ var Cloud = {
     var r = await sb.storage.from(BUCKET).upload(name, blob, {contentType:'image/jpeg', upsert:true});
     if(r.error) throw r.error;
   },
+  signed: async function(name){
+    var r = await sb.storage.from(BUCKET).createSignedUrl(name, 60*60*24);
+    if(r.error) throw r.error;
+    return r.data.signedUrl;
+  },
   removePhoto: async function(name){
     var r = await sb.storage.from(BUCKET).remove([name]);
     if(r.error) throw r.error;
