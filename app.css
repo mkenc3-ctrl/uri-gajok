@@ -438,3 +438,8 @@ button:disabled{opacity:.4}
 .spotwrap canvas{width:100%;height:auto;border-radius:14px;box-shadow:0 3px 0 #eadfc6;touch-action:manipulation;background:#f4ecdc}
 .spotmid{text-align:center;font-size:15px;color:var(--sub)}
 .lvls.four{grid-template-columns:1fr 1fr}
+.srd{font-size:17px;color:var(--sub);margin-top:4px}
+.lrd{font-size:14px;color:var(--sub)}
+.sset{flex-wrap:wrap}
+.sline .srd{display:block;color:#fff;opacity:.9;font-size:18px;margin-top:6px}
+.sline{flex-direction:column}

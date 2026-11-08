@@ -211,15 +211,55 @@ var POP = [
     ['I once was lost, but now am found', '나는 한때 길을 잃었지만 이제 찾았어요'],
     ['Was blind, but now I see', '눈이 멀었지만 이제는 보여요']]}
 ];
+/* 귀멸의 칼날: 노래 가사는 저작권이 있어 넣지 않고, 노래 제목 뜻·작품 속 짧은 말·쉬운 일본어만 씀 [일본어, 뜻, 읽는 법] */
+var KIMETSU_SONGS = [
+  ['紅蓮華', '붉은 연꽃', '구렌게', 'LiSA', '1기 여는 노래'],
+  ['炎', '불꽃', '호무라', 'LiSA', '무한열차편 노래'],
+  ['残響散歌', '흩어지는 메아리의 노래', '잔쿄산카', 'Aimer', '유곽편 여는 노래'],
+  ['朝が来る', '아침이 온다', '아사가 쿠루', 'Aimer', '유곽편 닫는 노래'],
+  ['絆ノ奇跡', '인연의 기적', '키즈나노 키세키', 'MAN WITH A MISSION milet', '대장장이 마을편 여는 노래'],
+  ['コイコガレ', '애타게 그리워해', '코이코가레', 'milet MAN WITH A MISSION', '대장장이 마을편 닫는 노래'],
+  ['夢幻', '꿈과 환상', '무겐', 'MAN WITH A MISSION milet', '합동 강화 훈련편 여는 노래'],
+  ['明け星', '새벽별', '아케보시', 'LiSA', '노래'],
+  ['白銀', '은빛', '시로가네', 'LiSA', '노래'],
+  ['竈門炭治郎のうた', '카마도 탄지로의 노래', '카마도 탄지로노 우타', '鬼滅の刃', '1기 19화 노래'],
+  ['鬼滅の刃', '귀신을 멸하는 칼날', '키메츠노 야이바', '鬼滅の刃', '작품 제목']
+];
+var KIMETSU = KIMETSU_SONGS.map(function(x){ return {s:x[4], ic:'⚔️', yt:x[3]+' '+x[0], l:[[x[0], x[1], x[2]]]}; }).concat([
+  {s:'호흡과 기술', ic:'🌊', l:[
+    ['全集中の呼吸', '전집중 호흡', '젠슈추노 코큐'],
+    ['水の呼吸', '물의 호흡', '미즈노 코큐'],
+    ['炎の呼吸', '불꽃의 호흡', '호노오노 코큐'],
+    ['雷の呼吸', '번개의 호흡', '카미나리노 코큐'],
+    ['獣の呼吸', '짐승의 호흡', '케다모노노 코큐'],
+    ['日の呼吸', '해의 호흡', '히노 코큐']]},
+  {s:'작품 속 말', ic:'👹', l:[
+    ['鬼', '도깨비(오니)', '오니'],
+    ['鬼殺隊', '귀살대', '키사츠타이'],
+    ['柱', '주(가장 강한 검사)', '하시라'],
+    ['日輪刀', '일륜도(해의 칼)', '니치린토'],
+    ['心を燃やせ', '마음을 불태워라', '코코로오 모야세'],
+    ['妹', '여동생', '이모우토'],
+    ['お兄ちゃん', '오빠·형', '오니이짱']]},
+  {s:'쉬운 일본어', ic:'🗾', l:[
+    ['頑張れ', '힘내', '간바레'],
+    ['ありがとう', '고마워', '아리가토우'],
+    ['諦めない', '포기하지 않아', '아키라메나이'],
+    ['強くなりたい', '강해지고 싶어', '츠요쿠 나리타이'],
+    ['家族を守る', '가족을 지킨다', '카조쿠오 마모루'],
+    ['友達', '친구', '토모다치'],
+    ['大丈夫', '괜찮아', '다이조부'],
+    ['行くぞ', '가자', '이쿠조']]}
+]);
 var songSet = 'hit';
 function song(el, h){
-  var best = h.best('song'), SET = songSet==='pop' ? POP : SONGS;  // hit: 인기 팝송 제목 / pop: 팝송 표현 문장
-  el.innerHTML = '<div class="gintro"><div class="gbig">🎵</div><h2>인기 팝송 번역 퀴즈</h2>'+
-    '<div class="sset"><button class="'+(songSet==='hit'?'on':'')+'" data-set="hit">🎤 인기 팝송 제목</button><button class="'+(songSet==='pop'?'on':'')+'" data-set="pop">💬 팝송 표현 문장</button></div>'+
-    '<p>'+(songSet==='pop' ? '팝송에 자주 나오는 영어 표현을 듣고' : '인기 팝송 <b>제목</b>을 듣고')+'<br><b>우리말 뜻</b>을 골라요! (10문제)</p>'+
-    '<div class="lvls two2"><button class="lvl" data-m="see"><span>📖</span><b>보고 맞히기</b><small>영어 글자가 보여요</small></button>'+
+  var best = h.best('song'), SET = songSet==='pop' ? POP : songSet==='jp' ? KIMETSU : SONGS, LANG = songSet==='jp' ? 'ja-JP' : 'en-US', LNM = songSet==='jp' ? '일본어' : '영어';  // hit: 인기 팝송 제목 / pop: 팝송 표현 / jp: 귀멸의 칼날
+  el.innerHTML = '<div class="gintro"><div class="gbig">🎵</div><h2>노래 번역 퀴즈</h2>'+
+    '<div class="sset"><button class="'+(songSet==='hit'?'on':'')+'" data-set="hit">🎤 인기 팝송 제목</button><button class="'+(songSet==='pop'?'on':'')+'" data-set="pop">💬 팝송 표현</button><button class="'+(songSet==='jp'?'on':'')+'" data-set="jp">⚔️ 귀멸의 칼날</button></div>'+
+    '<p>'+(songSet==='jp' ? '귀멸의 칼날 노래 제목과 <b>일본어</b>를 듣고' : songSet==='pop' ? '팝송에 자주 나오는 영어 표현을 듣고' : '인기 팝송 <b>제목</b>을 듣고')+'<br><b>우리말 뜻</b>을 골라요! (10문제)</p>'+
+    '<div class="lvls two2"><button class="lvl" data-m="see"><span>📖</span><b>보고 맞히기</b><small>'+LNM+' 글자가 보여요</small></button>'+
     '<button class="lvl" data-m="ear"><span>👂</span><b>듣고 맞히기</b><small>소리만 들어요 · 점수 2배</small></button></div>'+
-    '<button class="lvl lall" data-m="all"><span>🎧</span><b>노래 전체 듣기</b><small>영어와 우리말 뜻을 차례로 듣고, 원곡은 유튜브로</small></button>'+
+    '<button class="lvl lall" data-m="all"><span>🎧</span><b>노래 전체 듣기</b><small>'+LNM+'와 우리말 뜻을 차례로 듣고, 원곡은 유튜브로</small></button>'+
     (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
   el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); if(b.dataset.m==='all') listenAll(); else start(b.dataset.m); }; });
   el.querySelectorAll('.sset button').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); songSet = b.dataset.set; song(el, h); }; });
@@ -231,7 +271,7 @@ function song(el, h){
     SET.forEach(function(sg, i){
       html += '<div class="lsong" id="ls'+i+'"><button class="lshd" data-i="'+i+'">'+sg.ic+' <b>'+esc(sg.s)+'</b><span>▶ 듣기</span></button>'+
         (sg.yt ? '<a class="lyt" href="https://www.youtube.com/results?search_query='+encodeURIComponent(sg.yt)+'" target="_blank" rel="noopener">▶ 원곡은 유튜브에서 듣기</a>' : '');
-      sg.l.forEach(function(x, j){ html += '<div class="lline" id="ll'+i+'_'+j+'"><div class="len">'+esc(x[0])+'</div><div class="lko">'+esc(x[1])+'</div></div>'; });
+      sg.l.forEach(function(x, j){ html += '<div class="lline" id="ll'+i+'_'+j+'"><div class="len">'+esc(x[0])+(x[2]?' <small class="lrd">['+esc(x[2])+']</small>':'')+'</div><div class="lko">'+esc(x[1])+'</div></div>'; });
       html += '</div>';
     });
     el.innerHTML = html + '</div>';
@@ -240,7 +280,7 @@ function song(el, h){
     function play(list){
       var my = ++run; try{ speechSynthesis.cancel(); }catch(e){}
       var steps = [];
-      list.forEach(function(i){ SET[i].l.forEach(function(x, j){ steps.push({id:'ll'+i+'_'+j, t:x[0], lang:'en-US', rate:0.8}); steps.push({id:'ll'+i+'_'+j, t:x[1], lang:'ko-KR', rate:1}); }); });
+      list.forEach(function(i){ SET[i].l.forEach(function(x, j){ steps.push({id:'ll'+i+'_'+j, t:x[0], lang:LANG, rate:0.8}); steps.push({id:'ll'+i+'_'+j, t:x[1], lang:'ko-KR', rate:1}); }); });
       var k = 0;
       (function next(){
         if(my!==run) return;
@@ -262,20 +302,20 @@ function song(el, h){
 
   function start(mode){
     var all = [];
-    SET.forEach(function(sg){ sg.l.forEach(function(x){ all.push({en:x[0], ko:x[1], s:sg.s, ic:sg.ic}); }); });
+    SET.forEach(function(sg){ sg.l.forEach(function(x){ all.push({en:x[0], ko:x[1], rd:x[2], s:sg.s, ic:sg.ic}); }); });
     var qs = shuffle(all.slice()).slice(0, 10), qi = 0, right = 0, combo = 0, score = 0, lock = false;
     el.innerHTML = '<div class="gbar"><span>🎵 '+(mode==='ear'?'👂 듣고':'📖 보고')+' 맞히기</span><span id="sq">1 / 10</span><span id="ss">0점</span></div>'+
       '<div class="mprog"><i id="spb"></i></div><div class="songbox"><div class="stitle" id="st"></div>'+
       '<div class="sline" id="sl"></div><button class="slisten" id="sbtn">🔊 다시 듣기</button></div>'+
       '<div class="schoices" id="sc"></div><div class="qmsg" id="sm">&nbsp;</div>';
-    el.querySelector('#sbtn').onclick = function(){ speak(qs[qi].en); };
+    el.querySelector('#sbtn').onclick = function(){ speak(qs[qi].en, LANG); };
     show();
     function show(){
       var q = qs[qi]; lock = false;
       el.querySelector('#sq').textContent = (qi+1)+' / 10';
       el.querySelector('#spb').style.width = (qi*10)+'%';
       el.querySelector('#st').textContent = q.ic+' '+q.s;
-      el.querySelector('#sl').innerHTML = mode==='ear' ? '<span class="hidden">❓ ❓ ❓</span>' : esc(q.en);
+      el.querySelector('#sl').innerHTML = mode==='ear' ? '<span class="hidden">❓ ❓ ❓</span>' : esc(q.en)+(q.rd?'<div class="srd">['+esc(q.rd)+']</div>':'');
       el.querySelector('#sm').innerHTML = '&nbsp;';
       var wrong = shuffle(all.filter(function(x){ return x.ko!==q.ko; })).slice(0, 3).map(function(x){ return x.ko; });
       var c = el.querySelector('#sc'); c.innerHTML = '';
@@ -284,7 +324,7 @@ function song(el, h){
         b.onclick = function(){ answer(b, o); };
         c.appendChild(b);
       });
-      later(function(){ speak(q.en); }, 350);
+      later(function(){ speak(q.en, LANG); }, 350);
     }
     function answer(b, o){
       if(lock) return; lock = true;
@@ -299,8 +339,8 @@ function song(el, h){
         m.textContent = '❌ 정답은 「'+q.ko+'」';
       }
       el.querySelector('#ss').textContent = score+'점';
-      if(mode==='ear') el.querySelector('#sl').textContent = q.en;
-      later(function(){ speak(q.en, 'en-US', 0.9); }, 250);
+      if(mode==='ear') el.querySelector('#sl').innerHTML = esc(q.en)+(q.rd?'<div class="srd">['+esc(q.rd)+']</div>':'');
+      later(function(){ speak(q.en, LANG, 0.9); }, 250);
       later(function(){ qi++; if(qi>=qs.length) end(); else show(); }, ok ? 1900 : 2800);
     }
     function end(){
@@ -430,7 +470,7 @@ window.Games = {
   list: [
     {k:'pmatch', ic:'🧠', nm:'가족 사진 짝 맞추기', how:'쉬움·보통·어려움 · 처음에 잠깐 보여 줘요', unit:'점', high:true},
     {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 3단계', unit:'점', high:true},
-    {k:'song',   ic:'🎤', nm:'인기 팝송 번역 퀴즈', how:'팝송 제목·표현 뜻 맞히기 · 전체 듣기',       unit:'점', high:true},
+    {k:'song',   ic:'🎤', nm:'노래 번역 퀴즈', how:'인기 팝송 · 귀멸의 칼날 일본어 · 전체 듣기',       unit:'점', high:true},
     {k:'gugu',   ic:'✖️', nm:'구구단 퀴즈',         how:'60초 동안 몇 개 맞힐까?',               unit:'개', high:true}
   ],
   start: function(name, el, h){ stopAll(); if(!h.sfx) h.sfx = function(){};
