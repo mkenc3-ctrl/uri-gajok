@@ -597,6 +597,7 @@ function startGame(me){
   if(!canPlay(me)){ go('games'); return; }
   Games.start(k, el, {
     photos: PHOTOS, photoSrc: photoSrc, confetti: confetti, toast: toast, sfx: sfx,
+    faces: S.members.map(function(mb){ var f = facePic(mb); return {nm:mb.name, emo:mb.emoji, src: f ? photoSrc(f) : null, me: mb.id===me.id}; }),
     best: function(name){ return rec(name)[me.id]; },
     done: function(name, score, high, msg){
       var r = rec(name), old = r[me.id], better = old==null || (high ? score>old : score<old);

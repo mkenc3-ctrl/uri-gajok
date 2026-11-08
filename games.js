@@ -5,7 +5,8 @@
 var timers = [];
 function later(fn, ms){ var t = setTimeout(fn, ms); timers.push(t); return t; }
 function every(fn, ms){ var t = setInterval(fn, ms); timers.push(t); return t; }
-function stopAll(){ timers.forEach(function(t){ clearTimeout(t); clearInterval(t); }); timers = []; try{ speechSynthesis.cancel(); }catch(e){} }
+var runTok = null;
+function stopAll(){ runTok = null; timers.forEach(function(t){ clearTimeout(t); clearInterval(t); }); timers = []; try{ speechSynthesis.cancel(); }catch(e){} }
 function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function speak(text, lang, rate){
@@ -466,15 +467,164 @@ function spot(el, h){
   }
 }
 
+/* ⑤ 얼굴 두더지 잡기 — 구멍에서 가족 얼굴이 쏙! 빨리 눌러요 */
+function mole(el, h){
+  var best = h.best('mole');
+  el.innerHTML = '<div class="gintro"><div class="gbig">🔨</div><h2>얼굴 두더지 잡기</h2>'+
+    '<p>구멍에서 <b>가족 얼굴</b>이 쏙 나오면 빨리 눌러요!<br>⭐ 황금별은 +30점, 💣 폭탄은 누르면 −20점!</p>'+
+    '<div class="lvls"><button class="lvl" data-i="0"><span>🐢</span><b>천천히</b><small>40초</small></button><button class="lvl" data-i="1"><span>🐇</span><b>빠르게</b><small>40초</small></button><button class="lvl" data-i="2"><span>⚡</span><b>번개</b><small>40초</small></button></div>'+
+    (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
+  el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); play(+b.dataset.i); }; });
+  function play(lv){
+    var faces = (h.faces||[]).filter(function(f){ return f.src || f.emo; });
+    if(!faces.length) faces = [{emo:'🐹'}];
+    var speed = [1.0, 0.75, 0.55][lv], score = 0, combo = 0, left = 40, hits = 0, over = false;
+    el.innerHTML = '<div class="gbar"><span>🔨 얼굴 두더지</span><span id="mt">⏱️ 40초</span><span id="ms">0점</span></div><div class="mprog"><i id="mpb" style="width:100%"></i></div>'+
+      '<div class="mhint" id="mh">준비… 시작!</div><div class="moles" id="mg"></div>';
+    var g = el.querySelector('#mg'), holes = [];
+    for(var i=0;i<9;i++){
+      var d = document.createElement('div'); d.className = 'hole';
+      d.innerHTML = '<button class="mup"></button><span class="dirt"></span>';
+      g.appendChild(d); holes.push({el:d, btn:d.querySelector('.mup'), busy:false});
+    }
+    holes.forEach(function(ho){
+      ho.btn.addEventListener('pointerdown', function(e){
+        e.preventDefault(); if(over || !ho.busy || ho.hit) return;
+        ho.hit = true; var k = ho.kind, pts = 0, m = el.querySelector('#mh');
+        if(k==='bomb'){ pts = -20; combo = 0; h.sfx('no'); try{ if(navigator.vibrate) navigator.vibrate(200); }catch(e2){} m.textContent = '💥 앗, 폭탄! −20'; ho.el.classList.add('boom'); }
+        else { combo++; hits++; pts = (k==='star' ? 30 : 10) + (combo>=5 ? 5 : 0); h.sfx(k==='star' ? 'coin' : 'ok'); m.textContent = k==='star' ? '⭐ 황금별! +'+pts : (combo>=5 ? '🔥 '+combo+'연속! +'+pts : '👍 +'+pts); ho.el.classList.add('bonk'); if(combo%10===0) h.confetti(10); }
+        score = Math.max(0, score + pts); el.querySelector('#ms').textContent = score+'점';
+        var pop = document.createElement('span'); pop.className = 'mpop '+(pts<0?'neg':''); pop.textContent = (pts>0?'+':'')+pts; ho.el.appendChild(pop);
+        later(function(){ pop.remove(); }, 700);
+        later(function(){ down(ho); }, 160);
+      });
+    });
+    function down(ho){ ho.el.classList.remove('up','bonk','boom'); later(function(){ ho.busy = false; ho.hit = false; }, 180); }
+    function popUp(){
+      if(over) return;
+      var free = holes.filter(function(x){ return !x.busy; }); if(!free.length) return;
+      var ho = free[Math.floor(Math.random()*free.length)], r = Math.random(), f = faces[Math.floor(Math.random()*faces.length)];
+      ho.kind = r < 0.12 ? 'bomb' : r < 0.22 ? 'star' : 'face'; ho.busy = true; ho.hit = false;
+      ho.btn.innerHTML = ho.kind==='bomb' ? '<span class="memo">💣</span>' : ho.kind==='star' ? '<span class="memo">⭐</span>' : (f.src ? '<img src="'+f.src+'" alt="" draggable="false">' : '<span class="memo">'+f.emo+'</span>');
+      ho.el.classList.add('up');
+      var stay = (700 + Math.random()*600) * speed * (left<15 ? 0.8 : 1);
+      later(function(){ if(ho.busy && !ho.hit){ if(ho.kind!=='bomb') combo = 0; down(ho); } }, stay);
+    }
+    var t0 = Date.now();
+    function loop(){
+      if(over) return;
+      popUp(); if(left<25 && Math.random()<0.5) popUp(); if(left<10 && Math.random()<0.4) popUp();
+      later(loop, (520 + Math.random()*380) * speed);
+    }
+    later(loop, 700);
+    every(function(){
+      if(over) return;
+      left = 40 - Math.floor((Date.now()-t0)/1000);
+      el.querySelector('#mt').textContent = '⏱️ '+Math.max(0,left)+'초';
+      el.querySelector('#mpb').style.width = Math.max(0, left/40*100)+'%';
+      if(left===10) el.querySelector('#mh').textContent = '⚡ 10초 남았어요! 더 빨라져요';
+      if(left<=0){ over = true; h.confetti(20); later(function(){ stopAll(); h.done('mole', score, true, '🔨 '+hits+'번 잡았어요! '+score+'점'); }, 600); }
+    }, 250);
+  }
+}
+
+/* ⑥ 점프 달리기 — 내 얼굴이 달려요! 눌러서 뛰고, 별을 모아요 */
+function runner(el, h){
+  var best = h.best('run');
+  el.innerHTML = '<div class="gintro"><div class="gbig">🏃</div><h2>점프 달리기</h2>'+
+    '<p><b>내 얼굴</b>이 달려요! 화면을 누르면 점프,<br>공중에서 한 번 더 누르면 <b>2단 점프</b>!<br>📦 상자와 🐝 벌을 피하고 ⭐ 별을 모아요</p>'+
+    '<button class="big" id="rgo">▶ 달리기 시작</button>'+
+    (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
+  el.querySelector('#rgo').onclick = function(){ h.sfx('tap'); play(); };
+  function play(){
+    var W = 640, H = 360, GY = 300;
+    el.innerHTML = '<div class="gbar"><span>🏃 점프 달리기</span><span id="rd">0m</span><span id="rs">⭐ 0</span></div>'+
+      '<canvas id="rc" class="runcv" width="'+W+'" height="'+H+'"></canvas><div class="qmsg" id="rm">화면을 눌러서 점프!</div>';
+    var cv = el.querySelector('#rc'), x = cv.getContext('2d');
+    var meF = (h.faces||[]).filter(function(f){ return f.me; })[0] || (h.faces||[])[0] || {emo:'😀'};
+    var img = null; if(meF.src){ img = new Image(); img.src = meF.src; }
+    var p = {x:110, y:GY, vy:0, r:30, jumps:0}, obs = [], stars = [], clouds = [], parts = [];
+    var spd = 5.2, dist = 0, got = 0, tok = {}, last = performance.now(), spawn = 60, sSpawn = 90, dead = false, t = 0;
+    for(var i=0;i<4;i++) clouds.push({x:Math.random()*W, y:30+Math.random()*90, s:0.4+Math.random()*0.5});
+    runTok = tok;
+    function jump(e){
+      if(e) e.preventDefault(); if(dead) return;
+      if(p.jumps<2){ p.vy = p.jumps ? -11.5 : -13.5; p.jumps++; h.sfx('tap'); for(var k=0;k<6;k++) parts.push({x:p.x, y:p.y+p.r, vx:-Math.random()*3, vy:-Math.random()*2, l:20}); }
+    }
+    cv.addEventListener('pointerdown', jump);
+    var keyH = function(e){ if(e.code==='Space' || e.key===' ' || e.key==='ArrowUp'){ jump(e); } };
+    document.addEventListener('keydown', keyH);
+    function emoji(ch, cx, cy, size){ x.font = size+'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(ch, cx, cy); }
+    function frame(now){
+      if(runTok!==tok){ document.removeEventListener('keydown', keyH); return; }
+      var dt = Math.min(2, (now-last)/16.67); last = now; t += dt;
+      if(!dead){
+        spd += 0.0025*dt; dist += spd*dt/10;
+        p.vy += 0.62*dt; p.y += p.vy*dt;
+        if(p.y >= GY){ p.y = GY; p.vy = 0; p.jumps = 0; }
+        spawn -= dt;
+        if(spawn<=0){
+          var fly = dist>60 && Math.random()<0.3;
+          obs.push(fly ? {x:W+30, y:GY-10-Math.random()*80, w:32, h:28, ch:'🐝', fly:true} : {x:W+30, w:34, h:34, ch:Math.random()<0.5?'📦':'🪨', two:dist>120 && Math.random()<0.25});
+          spawn = (55 + Math.random()*55) * (5.2/spd) + 18;
+        }
+        sSpawn -= dt;
+        if(sSpawn<=0){ stars.push({x:W+20, y:GY-40-Math.random()*130}); sSpawn = 50 + Math.random()*70; }
+        obs.forEach(function(o){ o.x -= spd*dt; if(o.fly) o.y += Math.sin(t/8)*0.8; });
+        stars.forEach(function(s2){ s2.x -= spd*dt; });
+        obs = obs.filter(function(o){ return o.x > -60; }); stars = stars.filter(function(s2){ return s2.x > -30 && !s2.got; });
+        // 부딪힘
+        obs.forEach(function(o){
+          var GL = GY + p.r, x0 = o.x - o.w/2, x1 = o.x + o.w/2 + (o.two ? o.w : 0);
+          var top = o.fly ? o.y - o.h/2 : GL - o.h, bot = o.fly ? o.y + o.h/2 : GL;
+          var cx = Math.max(x0, Math.min(p.x, x1)), cy = Math.max(top, Math.min(p.y, bot)), dx = p.x-cx, dy = p.y-cy;
+          if(dx*dx + dy*dy < (p.r-6)*(p.r-6)) die();
+        });
+        stars.forEach(function(s2){ var dx = p.x-s2.x, dy = p.y-s2.y; if(dx*dx+dy*dy < 40*40){ s2.got = true; got++; h.sfx('coin'); el.querySelector('#rs').textContent = '⭐ '+got; for(var k=0;k<8;k++) parts.push({x:s2.x, y:s2.y, vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, l:24, c:'#ffd84d'}); } });
+        el.querySelector('#rd').textContent = Math.floor(dist)+'m';
+        if(Math.floor(dist)%100===0 && Math.floor(dist)>0 && !frame['m'+Math.floor(dist)]){ frame['m'+Math.floor(dist)] = 1; el.querySelector('#rm').textContent = '🎉 '+Math.floor(dist)+'m 돌파! 더 빨라져요'; h.sfx('fan'); }
+      }
+      // 그리기
+      var sky = x.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#bfe7ff'); sky.addColorStop(1,'#fff6d6'); x.fillStyle = sky; x.fillRect(0,0,W,H);
+      clouds.forEach(function(c){ c.x -= c.s*dt*(dead?0:1); if(c.x<-80) c.x = W+40; emoji('☁️', c.x, c.y, 46); });
+      x.fillStyle = '#7bc96f'; x.fillRect(0, GY+p.r-2, W, H-GY); x.fillStyle = '#5aa64f';
+      for(var gx = -((dist*10)%40); gx < W; gx += 40) x.fillRect(gx, GY+p.r-2, 20, 6);
+      stars.forEach(function(s2){ emoji('⭐', s2.x, s2.y + Math.sin((t+s2.x)/10)*4, 30); });
+      obs.forEach(function(o){ var cy2 = o.fly ? o.y : GY + p.r - o.h/2; emoji(o.ch, o.x, cy2, o.fly?34:38); if(o.two) emoji(o.ch, o.x+o.w, cy2, 38); });
+      parts.forEach(function(q){ q.x += q.vx*dt; q.y += q.vy*dt; q.l -= dt; x.globalAlpha = Math.max(0, q.l/24); x.fillStyle = q.c || '#c8a26a'; x.beginPath(); x.arc(q.x, q.y, 4, 0, 7); x.fill(); x.globalAlpha = 1; });
+      parts = parts.filter(function(q){ return q.l>0; });
+      // 나(얼굴)
+      var sq = p.y<GY ? 1 : 1 + Math.sin(t/3)*0.04;
+      x.save(); x.translate(p.x, p.y); x.rotate(p.y<GY ? Math.max(-0.4, p.vy*0.03) : 0); x.scale(1/sq, sq);
+      x.beginPath(); x.arc(0, 0, p.r, 0, 7); x.fillStyle = '#fff'; x.fill(); x.lineWidth = 4; x.strokeStyle = dead ? '#e03131' : '#ff9a2e'; x.stroke();
+      x.save(); x.beginPath(); x.arc(0, 0, p.r-3, 0, 7); x.clip();
+      if(img && img.complete && img.naturalWidth) x.drawImage(img, -p.r, -p.r, p.r*2, p.r*2); else emoji(meF.emo||'😀', 0, 2, 40);
+      x.restore(); x.restore();
+      if(p.y>=GY && !dead){ x.font = '20px sans-serif'; x.fillText(Math.floor(t/6)%2 ? '👟' : '🦶', p.x-4, p.y+p.r+2); }
+      if(dead){ x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(0,0,W,H); x.fillStyle = '#fff'; x.font = '40px sans-serif'; x.textAlign = 'center'; x.fillText('쿵! 💫', W/2, H/2); }
+      requestAnimationFrame(frame);
+    }
+    function die(){
+      if(dead) return; dead = true; h.sfx('no'); try{ if(navigator.vibrate) navigator.vibrate([150,60,150]); }catch(e){}
+      var score = Math.floor(dist) + got*10;
+      el.querySelector('#rm').textContent = '💫 '+Math.floor(dist)+'m · ⭐ '+got+'개';
+      later(function(){ stopAll(); document.removeEventListener('keydown', keyH); h.done('run', score, true, '🏃 '+Math.floor(dist)+'m 달리고 ⭐ '+got+'개! '+score+'점'); }, 1300);
+    }
+    requestAnimationFrame(frame);
+  }
+}
+
 window.Games = {
   list: [
+    {k:'run',    ic:'🏃', nm:'점프 달리기',           how:'내 얼굴이 달려요 · 2단 점프 · 별 모으기', unit:'점', high:true},
+    {k:'mole',   ic:'🔨', nm:'얼굴 두더지 잡기',      how:'가족 얼굴을 빨리 눌러요 · 폭탄 조심!',   unit:'점', high:true},
     {k:'pmatch', ic:'🧠', nm:'가족 사진 짝 맞추기', how:'쉬움·보통·어려움 · 처음에 잠깐 보여 줘요', unit:'점', high:true},
     {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 4단계', unit:'점', high:true},
     {k:'song',   ic:'🎤', nm:'노래 번역 퀴즈', how:'인기 팝송 · 귀멸의 칼날 일본어 · 전체 듣기',       unit:'점', high:true},
     {k:'gugu',   ic:'✖️', nm:'구구단 퀴즈',         how:'60초 동안 몇 개 맞힐까?',               unit:'개', high:true}
   ],
   start: function(name, el, h){ stopAll(); if(!h.sfx) h.sfx = function(){};
-    ({pmatch:memory, spot:spot, song:song, gugu:gugu})[name](el, h); },
+    ({run:runner, mole:mole, pmatch:memory, spot:spot, song:song, gugu:gugu})[name](el, h); },
   stop: stopAll
 };
 })();
