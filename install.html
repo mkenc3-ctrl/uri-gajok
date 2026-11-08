@@ -24,10 +24,10 @@ h1 img{width:44px;height:44px;border-radius:11px}
 .tip{background:#fff3c4;border-radius:14px;padding:10px 12px;font-size:16px;line-height:1.5;margin-top:10px}
 
 /* 아이폰 그림 */
-.phone{width:250px;margin:0 auto;border:9px solid #1d1d1f;border-radius:38px;background:#fff;overflow:hidden;position:relative;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:13px;color:#111;box-shadow:0 8px 20px rgba(0,0,0,.15)}
-.scr{height:440px;position:relative;display:flex;flex-direction:column}
-.isl{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:76px;height:22px;background:#1d1d1f;border-radius:12px;z-index:5}
-.stat{height:34px;flex:none;display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 4px;font-size:12px;font-weight:600}
+.phone{width:240px;margin:0 auto;border:9px solid #1d1d1f;border-radius:38px;background:#fff;overflow:hidden;position:relative;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:13px;color:#111;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+.scr{height:470px;position:relative;display:flex;flex-direction:column}
+.isl{position:absolute;top:0;left:50%;transform:translateX(-50%);width:118px;height:22px;background:#1d1d1f;border-radius:0 0 14px 14px;z-index:5}
+.stat{height:28px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 16px;font-size:12px;font-weight:600}
 .hl{position:relative;z-index:3;outline:3px solid var(--red);outline-offset:2px;border-radius:8px;animation:blink 1.1s infinite}
 @keyframes blink{50%{outline-color:rgba(255,59,48,.25)}}
 .finger{position:absolute;font-size:30px;z-index:6;animation:tap 1.1s infinite;pointer-events:none}
@@ -66,6 +66,12 @@ h1 img{width:44px;height:44px;border-radius:11px}
 .stools{display:flex;justify-content:space-around;align-items:center;font-size:18px;color:var(--blue);height:26px}
 .ico-share{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px}
 
+.g26{position:absolute;left:8px;right:8px;bottom:12px;display:flex;gap:6px;align-items:center;z-index:4}
+.g26 .gb{width:34px;height:34px;border-radius:50%;background:rgba(240,240,245,.95);box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;font-size:16px}
+.g26 .ga{flex:1;height:34px;border-radius:17px;background:rgba(240,240,245,.95);box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;font-size:11px}
+.dock{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(255,255,255,.35);border-radius:22px;padding:8px;display:flex;justify-content:space-around}
+.dock .app span,.saf{display:flex!important;align-items:center;justify-content:center;font-size:26px}
+.saf{background:#fff!important}
 /* 공유 시트 */
 .sheet{position:absolute;left:0;right:0;bottom:0;background:#f2f2f7;border-radius:16px 16px 0 0;z-index:4;padding:10px 10px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.2)}
 .sheet .grab{width:36px;height:5px;background:#c7c7cc;border-radius:3px;margin:0 auto 8px}
@@ -107,54 +113,28 @@ h1 img{width:44px;height:44px;border-radius:11px}
 <body>
 <div class="wrap">
 <h1><img src="icon-192.png" alt="">아이폰에 「우리가족」 설치하기</h1>
-<p class="lead">앱스토어에서 받지 않아도 돼요.<br>사파리에서 한 번 열고 <b>「홈 화면에 추가」</b>만 하면 앱처럼 써요.<br><small>그림의 <span style="color:#ff3b30">빨간 테두리</span>와 👆 손가락을 따라 누르세요.</small></p>
+<p class="lead">앱스토어에서 받지 않아도 돼요.<br>사파리에서 한 번 열고 <b>「홈 화면에 추가」</b>만 하면 앱처럼 써요.<br><small>📱 아이폰 13 미니 기준으로 그렸어요.<br>그림의 <span style="color:#ff3b30">빨간 테두리</span>와 👆 손가락을 따라 누르세요.</small></p>
 <div class="url">https://mkenc3-ctrl.github.io/uri-gajok/</div>
 
 <!-- 1 -->
 <div class="step">
-  <div class="sh"><div class="no">1</div><h2>카톡으로 받은 주소 누르기</h2></div>
-  <p class="say">엄마·아빠가 카톡으로 보낸 <b>파란 주소</b>를 누르세요.</p>
-  <div class="phone"><div class="scr"><div class="isl"></div>
-    <div class="stat"><span>9:41</span><span>📶 🔋</span></div>
-    <div class="khd">‹ 엄마</div>
-    <div class="kbar">
-      <div class="kmsg"><div class="kava">🐰</div><div class="kbub">우리 가족 앱이야. 눌러서 설치해 줘 😊</div></div>
-      <div class="kmsg"><div class="kava">🐰</div><div class="kbub hl"><a>https://mkenc3-ctrl.github.io/uri-gajok/</a></div></div>
-      <div class="kprev"><div class="ph"><img src="icon-192.png" alt=""></div><div class="t">우리 가족 하루</div></div>
-    </div>
-    <div class="finger" style="left:120px;top:150px">👆</div>
-  </div></div>
+  <div class="sh"><div class="no">1</div><h2>카톡 주소를 <u>꾹 누르기</u></h2></div>
+  <p class="say">카톡의 파란 주소를 <b>톡 누르지 말고</b>, 손가락으로 <b>1초 동안 꾹</b> 누르세요.<br>메뉴가 나오면 <b>「복사」</b>를 누르세요.</p>
+  <div class="two">
+    <div><div class="phone"><div class="scr"><div class="isl"></div><div class="stat"><span>9:41</span><span>📶 🔋</span></div><div class="khd">‹ 엄마</div><div class="kbar"><div class="kmsg"><div class="kava">🐰</div><div class="kbub">우리 가족 앱이야 😊</div></div><div class="kmsg"><div class="kava">🐰</div><div class="kbub hl"><a>https://mkenc3-ctrl.github.io/uri-gajok/</a></div></div></div><div class="finger" style="left:110px;top:118px">👆</div></div></div><div class="cap">① 주소를 꾹~</div></div>
+    <div><div class="phone"><div class="scr"><div class="isl"></div><div class="stat"><span>9:41</span><span>📶 🔋</span></div><div class="khd">‹ 엄마</div><div class="kbar"><div class="kmsg"><div class="kava">🐰</div><div class="kbub">우리 가족 앱이야 😊</div></div><div class="kmsg"><div class="kava">🐰</div><div class="kbub"><a>https://mkenc3-ctrl.github.io/uri-gajok/</a></div></div></div><div class="dim"></div><div class="menu" style="top:150px;bottom:auto;left:40px;right:auto"><div>열기</div><div class="hl" style="outline-offset:-3px">📋 복사</div><div>공유</div><div>나에게 보내기</div></div><div class="finger" style="left:130px;top:196px">👆</div></div></div><div class="cap">② 「복사」 (「URL 복사」일 수도 있어요)</div></div>
+  </div>
 </div>
 
 <!-- 2 -->
 <div class="step">
-  <div class="sh"><div class="no">2</div><h2>「Safari로 열기」 누르기</h2></div>
-  <p class="say">카톡 안에서 열리면 <b>설치가 안 돼요.</b><br>오른쪽 아래 <b>⋯ (점 세 개)</b>를 누르고 → <b>「Safari로 열기」</b>(또는 「다른 브라우저로 열기」)를 누르세요.</p>
+  <div class="sh"><div class="no">2</div><h2>사파리를 열고 붙여넣기</h2></div>
+  <p class="say">카톡을 나가서 홈 화면의 <b>사파리</b>(파란 <b>🧭 나침반</b>)를 누르세요.<br>아래쪽(또는 위쪽) <b>주소창을 꾹</b> 누르고 → <b>「붙여넣기 및 이동」</b>을 누르세요.</p>
   <div class="two">
-    <div>
-      <div class="phone"><div class="scr"><div class="isl"></div>
-        <div class="stat"><span>9:41</span><span>📶 🔋</span></div>
-        <div class="kweb-top"><span class="x">✕</span><span class="u">mkenc3-ctrl.github.io</span></div>
-        <div class="page"><div class="ttl">🏠 우리 가족 하루</div><div class="card">☁️<br>가족 계정으로 들어가요</div></div>
-        <div class="kweb-bot"><span>‹</span><span>›</span><span>↻</span><span class="hl" style="padding:0 6px">⋯</span></div>
-        <div class="finger" style="right:12px;bottom:6px">👆</div>
-      </div></div>
-      <div class="cap">① 오른쪽 아래 ⋯</div>
-    </div>
-    <div>
-      <div class="phone"><div class="scr"><div class="isl"></div>
-        <div class="stat"><span>9:41</span><span>📶 🔋</span></div>
-        <div class="kweb-top"><span class="x">✕</span><span class="u">mkenc3-ctrl.github.io</span></div>
-        <div class="page"><div class="ttl">🏠 우리 가족 하루</div><div class="card">☁️<br>가족 계정으로 들어가요</div></div>
-        <div class="kweb-bot"><span>‹</span><span>›</span><span>↻</span><span>⋯</span></div>
-        <div class="dim"></div>
-        <div class="menu"><div>링크 복사</div><div>공유하기</div><div class="hl" style="outline-offset:-3px">🧭 Safari로 열기</div><div>새로고침</div></div>
-        <div class="finger" style="right:30px;bottom:96px">👆</div>
-      </div></div>
-      <div class="cap">② 「Safari로 열기」</div>
-    </div>
+    <div><div class="phone"><div class="scr"><div class="isl"></div><div class="stat"><span>9:41</span><span>📶 🔋</span></div><div class="home"><div class="app"><span></span>카메라</div><div class="app"><span></span>사진</div><div class="app"><span style="background:#ffe812"></span>카카오톡</div><div class="app"><span></span>설정</div></div><div class="dock"><div class="app"><span style="background:#34c759"></span></div><div class="app hl" style="outline-offset:2px"><span class="saf">🧭</span></div><div class="app"><span style="background:#34c759"></span></div><div class="app"><span style="background:#ff2d55"></span></div></div><div class="finger" style="left:84px;bottom:6px">👆</div></div></div><div class="cap">① 사파리 🧭 (보통 맨 아래 줄)</div></div>
+    <div><div class="phone"><div class="scr"><div class="isl"></div><div class="stat"><span>9:41</span><span>📶 🔋</span></div><div class="page" style="background:#fff"><div style="color:#999;margin-top:60px">즐겨찾기</div></div><div class="dim"></div><div class="menu" style="bottom:64px;left:50px;right:auto;width:150px"><div>붙여넣기</div><div class="hl" style="outline-offset:-3px">➡️ 붙여넣기 및 이동</div></div><div class="sbot" style="position:relative;z-index:4"><div class="saddr hl">검색 또는 웹사이트 이름 입력</div><div class="stools"><span>‹</span><span>›</span><span>⬆️</span><span>📖</span><span>⧉</span></div></div><div class="finger" style="left:110px;bottom:80px">👆</div></div></div><div class="cap">② 주소창 꾹 → 「붙여넣기 및 이동」</div></div>
   </div>
-  <div class="tip">💡 메뉴가 안 보이면: 주소를 <b>길게 눌러 「복사」</b> → 사파리(🧭 나침반 아이콘)를 열고 → 위·아래 주소창에 <b>붙여넣기</b> → 이동</div>
+  <div class="tip">💡 메뉴가 안 나오면: 주소창을 <b>톡</b> 누르고 키보드로 직접 쳐도 돼요.<br><b style="font-size:17px">mkenc3-ctrl.github.io/uri-gajok</b><br>다 치고 키보드의 <b>「이동」</b>을 누르세요.</div>
 </div>
 
 <!-- 3 -->
@@ -178,16 +158,34 @@ h1 img{width:44px;height:44px;border-radius:11px}
 <!-- 4 -->
 <div class="step">
   <div class="sh"><div class="no">4</div><h2>공유 버튼 누르기</h2></div>
-  <p class="say">사파리 <b>아래쪽 가운데</b>에 있는 <b>공유 버튼</b>(네모에서 화살표가 위로 나온 모양 <b>⬆️</b>)을 누르세요.</p>
-  <div class="phone"><div class="scr"><div class="isl"></div>
-    <div class="stat"><span>9:41</span><span>📶 🔋</span></div>
-    <div class="page"><div class="ttl">🏠 우리 가족 하루</div>
-      <div class="card" style="text-align:left">👨‍👩‍👧‍👦 부모님<br><span class="mini">🐻 아빠 &nbsp; 🐰 엄마</span><br><br>🧒 우리 아이들<br><span class="mini">🐱 🐯 🐶</span></div>
+  <p class="say">사파리 <b>아래쪽</b>을 보세요. 아이폰 버전에 따라 둘 중 하나예요.</p>
+  <div class="two">
+    <div>
+      <div class="phone"><div class="scr"><div class="isl"></div>
+        <div class="stat"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="page"><div class="ttl">🏠 우리 가족 하루</div>
+          <div class="card" style="text-align:left">👨‍👩‍👧‍👦 부모님<br><span class="mini">🐻 아빠 &nbsp; 🐰 엄마</span><br><br>🧒 우리 아이들<br><span class="mini">🐱 🐯 🐶</span></div>
+        </div>
+        <div class="sbot"><div class="saddr">🔒 mkenc3-ctrl.github.io</div><div class="stools"><span>‹</span><span>›</span><span class="hl ico-share">⬆️</span><span>📖</span><span>⧉</span></div></div>
+        <div class="finger" style="left:104px;bottom:-2px">👆</div>
+      </div></div>
+      <div class="cap"><b>가) 아래에 버튼 5개가 있으면</b><br>가운데 <b>⬆️ 공유</b>를 누르세요</div>
     </div>
-    <div class="sbot"><div class="saddr">🔒 mkenc3-ctrl.github.io</div><div class="stools"><span>‹</span><span>›</span><span class="hl ico-share">⬆️</span><span>📖</span><span>⧉</span></div></div>
-    <div class="finger" style="left:110px;bottom:-2px">👆</div>
-  </div></div>
-  <div class="tip">💡 <b>최신 아이폰</b>(iOS 26)은 아래에 공유 버튼이 안 보일 수 있어요.<br>그럴 땐 주소창 옆 <b>⋯ (점 세 개)</b> → <b>「공유」</b>를 누르세요.<br>아래 막대가 안 보이면 화면을 살짝 <b>아래로 내리면</b> 나타나요.</div>
+    <div>
+      <div class="phone"><div class="scr"><div class="isl"></div>
+        <div class="stat"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="page"><div class="ttl">🏠 우리 가족 하루</div>
+          <div class="card" style="text-align:left">👨‍👩‍👧‍👦 부모님<br><span class="mini">🐻 아빠 &nbsp; 🐰 엄마</span><br><br>🧒 우리 아이들<br><span class="mini">🐱 🐯 🐶</span></div>
+        </div>
+        <div class="dim"></div>
+        <div class="menu" style="bottom:54px"><div class="hl" style="outline-offset:-3px">⬆️ 공유</div><div>📖 책갈피 추가</div><div>⧉ 새로운 탭</div><div>🔍 페이지에서 찾기</div></div>
+        <div class="g26"><span class="gb">‹</span><span class="ga">mkenc3-ctrl.github.io</span><span class="gb hl">⋯</span></div>
+        <div class="finger" style="right:34px;bottom:100px">👆</div>
+      </div></div>
+      <div class="cap"><b>나) 아래에 주소창과 ⋯ 만 있으면</b><br>오른쪽 <b>⋯</b> → <b>「공유」</b>를 누르세요</div>
+    </div>
+  </div>
+  <div class="tip">💡 아래 막대가 안 보이면 화면을 살짝 <b>아래로 내리면</b> 나타나요.<br>💡 주소창이 <b>맨 위</b>에 있는 아이폰도 있어요. 그럴 땐 공유 버튼이 <b>맨 아래</b> 줄에 있어요.</div>
 </div>
 
 <!-- 5 -->
