@@ -472,7 +472,30 @@ function lightbox(src){
 /* ---------- 화면 공통 ---------- */
 var V = {screen:'home', id:null, kid:null, tmp:{}};
 var app = document.getElementById('app');
-function go(screen, id){ var from = V.screen; V.screen = screen; if(id!==undefined) V.id = id; V.tmp = {}; render(); window.scrollTo(0,0); guide(from); }
+var hist = [];
+function pushHist(){
+  var last = hist[hist.length-1];
+  if(last && last.screen===V.screen && last.id===V.id) return;
+  hist.push({screen:V.screen, id:V.id, kid:V.kid, y:window.scrollY});
+  if(hist.length>30) hist.shift();
+  try{ history.pushState({fam:hist.length}, ''); }catch(e){}
+}
+function go(screen, id){ var from = V.screen; if(screen!==from || (id!==undefined && id!==V.id)) pushHist(); V.screen = screen; if(id!==undefined) V.id = id; V.tmp = {}; render(); window.scrollTo(0,0); guide(from); }
+function goBack(){
+  var p = hist.pop();
+  if(!p){ if(V.screen!=='home'){ V.screen = 'home'; V.tmp = {}; render(); window.scrollTo(0,0); } return; }
+  V.screen = p.screen; V.id = p.id; V.kid = p.kid; V.tmp = {}; render(); window.scrollTo(0, p.y||0);
+}
+function closeOverlay(){
+  var o = document.querySelector('.slides, .lightbox, .pop');
+  if(!o) return false;
+  if(o.classList.contains('slides')) clearInterval(slideT);
+  o.remove(); return true;
+}
+window.addEventListener('popstate', function(){
+  if(closeOverlay()){ try{ history.pushState({fam:hist.length}, ''); }catch(e){} return; }
+  goBack();
+});
 function guide(from){
   var me = V.id ? mem(V.id) : null, sc = V.screen, t = '';
   if(sc==='me' && me && from==='home'){
@@ -546,7 +569,7 @@ function vGames(me){
 }
 function vPlay(me){
   var g = Games.list.filter(function(x){ return x.k===V.tmp.g; })[0];
-  return '<div class="top"><button class="back" data-act="games">← 게임방</button><div style="flex:1"></div></div><div id="gamearea" class="gamearea"></div>';
+  return '<div class="top"><button class="back" data-act="back">← 뒤로</button><div style="flex:1"></div></div><div id="gamearea" class="gamearea"></div>';
 }
 function startGame(me){
   var el = document.getElementById('gamearea'), k = V.tmp.g;
@@ -582,7 +605,7 @@ function startAlbum(){
     document.getElementById('albumcap').textContent = '📸 '+PHOTOS[albumI].cap;
   }, 4000);
 }
-function backBar(to){ return '<div class="top"><button class="back" data-act="'+(to||'me')+'">← '+(to==='home'?'처음으로':'내 화면')+'</button><div style="flex:1"></div>'+'<button class="refresh" data-act="refresh" aria-label="새로고침">🔄 새로고침</button>'+'</div>'; }
+function backBar(to){ return '<div class="top"><button class="back" data-act="back">← 뒤로</button><div style="flex:1"></div>'+'<button class="refresh" data-act="refresh" aria-label="새로고침">🔄 새로고침</button>'+'</div>'; }
 var HD_PHOTO = {'숙제 끝내기':'p11','외출 보고':'p12','자유시간':'p03','마감 보고':'p07','칭찬 보내기':'p02','가족 설정':'p10'};
 function pageHd(ic, title, sub, bg){
   var ph = HD_PHOTO[title]; if(ph && !hasPhoto(ph)) ph = PHOTOS.length ? PHOTOS[title.length % PHOTOS.length].f : null;
@@ -1347,6 +1370,7 @@ app.addEventListener('click', function(e){
   var a = b.getAttribute('data-act'), v = b.getAttribute('data-v'), me = V.id ? mem(V.id) : null, d;
   switch(a){
     case 'home': go('home'); break;
+    case 'back': if(hist.length) history.back(); else goBack(); break;
     case 'refresh':
       try{ sessionStorage.setItem('fam-back', JSON.stringify({screen:V.screen, id:V.id, kid:V.kid})); }catch(e){}
       toast('🔄 새로 불러오는 중…', {say:false});
@@ -1376,7 +1400,7 @@ app.addEventListener('click', function(e){
       try{ localStorage.setItem('fam-last', who.id); }catch(err){}
       go('me', who.id); break;
     case 'me': case 'hw': case 'out': case 'free': case 'report': case 'praise': case 'games': go(a); break;
-    case 'play': V.screen = 'play'; V.tmp = {g:v}; render(); window.scrollTo(0,0); break;
+    case 'play': pushHist(); V.screen = 'play'; V.tmp = {g:v}; render(); window.scrollTo(0,0); break;
     case 'praiseto': go('praise'); V.tmp.to = v; render(); break;
     case 'chat': go('chat'); break;
     case 'ask': askGo(document.getElementById('askin').value); break;
