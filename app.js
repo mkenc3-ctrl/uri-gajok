@@ -543,7 +543,7 @@ function navBar(me){
   function it(act, ic, nm, on, extra){ return '<button data-act="'+act+'" class="'+(on?'on':'')+'"><span class="ni">'+ic+'</span>'+nm+(extra||'')+'</button>'; }
   nav.innerHTML = it('home', '🏠', '처음으로', false) +
     it('me', '🙂', '내 화면', sc==='me') +
-    it('chat', '💬', '대화', sc==='chat', un ? '<i class="nbd">'+un+'</i>' : '') +
+    it('chat', '💬', '쪽지', sc==='chat', un ? '<i class="nbd">'+un+'</i>' : '') +
     it('games', me.kid && !freeOpen(me.id) ? '🔒' : '🕹️', '게임', sc==='games') +
     it('urgent', '🚨', '긴급', false);
 }
@@ -565,7 +565,7 @@ function render(){
   app.innerHTML = f(me);
   navBar(me);
   fillProofs();
-  if(V.screen==='chat' && me){ markRead(me); window.scrollTo(0, document.body.scrollHeight); }
+  if(V.screen==='chat' && me){ markRead(me, V.tmp.urgent ? null : V.tmp.room); if(V.tmp.room || V.tmp.urgent) window.scrollTo(0, document.body.scrollHeight); }
   if(V.screen==='free') tick();
   if(V.screen==='play') startGame(me);
   startAlbum();
@@ -970,7 +970,7 @@ function vKid(me){
     '<button class="tile t-cal" data-act="cal"><span class="ic">📅</span><span><div class="tt">가족 일정</div><div class="st">생일·병원·행사</div></span></button>'+
     '<button class="tile t-pet" data-act="pet"><span class="ic petic">'+pet(me.id).ic+'</span><span><div class="tt">동물 친구</div><div class="st">'+pet(me.id).nm+'</div></span></button>'+
     '<button class="tile t-urgent wide2" data-act="urgent"><span class="ic">🚨</span><span><div class="tt">긴급 공지 올리기</div><div class="st">가족 모두에게 바로 크게 알려요</div></span></button>'+
-    '<button class="tile t-chat wide2" data-act="chat"><span class="ic">💬</span><span><div class="tt">가족 대화방'+(unread(me.id)?' <span class="nb">새 쪽지 '+unread(me.id)+'</span>':'')+'</div><div class="st">엄마·아빠·형제에게 쪽지 보내기</div></span></button>'+
+    '<button class="tile t-chat wide2" data-act="chat"><span class="ic">💬</span><span><div class="tt">가족 대화방'+(unread(me.id)?' <span class="nb">새 쪽지 '+unread(me.id)+'</span>':'')+'</div><div class="st">엄마·아빠·형제에게 1:1 쪽지 보내기</div></span></button>'+
     '<button class="tile t-game wide2'+(open?'':' locked')+'" data-act="games"><span class="ic">'+(open?'🕹️':'🔒')+'</span><span><div class="tt">게임방</div><div class="st">'+
       (open?'짝 맞추기 · 틀린 그림 · 노래 퀴즈 · 구구단':'미션을 다 하면 열려요')+'</div></span></button>'+
     '</div>';
@@ -1288,7 +1288,7 @@ function vParent(me){
     '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + upcomingHtml(me) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) +
     '<button class="wide urgentbtn" data-act="urgent">🚨 긴급 공지 올리기</button>'+
     '<div class="pbtns"><button class="wide" data-act="cal">📅 가족 일정</button><button class="wide" data-act="moneykids">💰 아이들 용돈</button></div>'+
-    '<button class="wide chatbtn" data-act="chat">💬 가족 대화방'+(unread(me.id)?' <span class="nb">'+unread(me.id)+'</span>':'')+'</button>';
+    '<button class="wide chatbtn" data-act="chat">💬 쪽지함'+(unread(me.id)?' <span class="nb">'+unread(me.id)+'</span>':'')+'</button>';
 
   h += '<div class="section"><h2>📥 확인할 보고</h2>';
   if(!list.length) h += '<div class="empty">지금은 확인할 보고가 없어요 😊</div>';
@@ -1362,6 +1362,11 @@ var QUICK_PARENT = ['잘했어 👍','간식 식탁에 있어 🍪','곧 도착�
 var STICKERS = ['👍','💛','😂','🎉','😢','🙏','😴','🍗'];
 function forMe(g, id){ return g.from!==id && (g.to==='all' || g.to===id); }
 function canSee(g, me){ return !me.kid || g.to==='all' || g.to===me.id || g.from===me.id; }
+function inRoom(g, myId, room){
+  if(room==='all') return g.to==='all';
+  return (g.from===myId && g.to===room) || (g.from===room && g.to===myId);
+}
+function roomUnread(myId, room){ return (S.msgs||[]).filter(function(g){ return inRoom(g, myId, room) && forMe(g, myId) && !(g.read||{})[myId]; }).length; }
 function unread(id){ return (S.msgs||[]).filter(function(g){ return forMe(g, id) && !(g.read||{})[id]; }).length; }
 function nbadge(id){ var n = unread(id); return n ? '<span class="nbadge">💬 '+n+'</span>' : ''; }
 function urgentList(){ var since = Date.now() - 24*3600*1000; return (S.msgs||[]).filter(function(g){ return g.urgent && g.t > since; }); }
@@ -1386,12 +1391,13 @@ function msgNotice(me){
   if(!list.length) return '';
   var h = '<div class="notice msgnote"><h3>📨 새 쪽지가 '+list.length+'개 왔어요!</h3>';
   list.slice(-3).forEach(function(g){ var f = mem(g.from); if(!f) return;
-    h += '<div class="nrow">'+mini(f)+' <b>'+esc(f.name)+'</b>: '+esc(g.text)+'</div>'; });
-  return h + '<button class="seen" data-act="chat">💬 대화방에서 보기 · 답장하기</button></div>';
+    h += '<button class="nrow" data-act="chatto" data-v="'+(g.to==='all'?'all':f.id)+'">'+mini(f)+' <b>'+esc(f.name)+'</b>: '+esc(g.text)+' ›</button>'; });
+  return h + '<button class="seen" data-act="chat">💬 쪽지함에서 보기 · 답장하기</button></div>';
 }
-function markRead(me){
+function markRead(me, room){
   var ch = false, now = Date.now();
-  S.msgs.forEach(function(g){ if(forMe(g, me.id) && !(g.read||{})[me.id]){ g.read = g.read || {}; g.read[me.id] = now; ch = true; } });
+  if(!room) return;
+  S.msgs.forEach(function(g){ if(inRoom(g, me.id, room) && !g.urgent && forMe(g, me.id) && !(g.read||{})[me.id]){ g.read = g.read || {}; g.read[me.id] = now; ch = true; } });
   if(ch) save();
 }
 function cSend(me, text, stk){
@@ -1441,17 +1447,32 @@ function msgAlert(g){
     say: f.name+'의 쪽지예요. '+g.text});
 }
 function dayLabel(t){ var d = new Date(t), ds = dstr(d); return ds===today() ? '오늘' : ds===dayBefore(today()) ? '어제' : (d.getMonth()+1)+'월 '+d.getDate()+'일'; }
+function roomListHtml(me){
+  var h = backBar() + pageHd('💬', '쪽지함', '누구에게 보낼까요? 눌러서 1:1로 이야기해요', 'linear-gradient(135deg,#4f8cff,#7bdff2)');
+  h += urgentHtml(me) + '<div class="rooms">';
+  var rooms = [{id:'all', nm:'👨‍👩‍👧‍👦 가족 모두', face:'<span class="rall">🏠</span>'}].concat(S.members.filter(function(m){ return m.id!==me.id; }).map(function(m){ return {id:m.id, nm:m.name, face:face(m), mb:m}; }));
+  rooms.forEach(function(r){
+    var ms = S.msgs.filter(function(g){ return !g.urgent && inRoom(g, me.id, r.id); }), lastG = ms[ms.length-1], n = roomUnread(me.id, r.id);
+    var prev = lastG ? ((lastG.from===me.id ? '나: ' : (r.id==='all' && mem(lastG.from) ? mem(lastG.from).name+': ' : ''))+lastG.text) : (r.id==='all' ? '가족 모두에게 한 번에 보내요' : '아직 쪽지가 없어요. 눌러서 보내 봐요');
+    h += '<button class="room'+(n?' new':'')+'" data-act="room" data-v="'+r.id+'"><span class="rface">'+r.face+'</span>'+
+      '<span class="rbody"><b>'+esc(r.nm)+(r.mb ? ' <small>'+esc(r.mb.role||'')+'</small>' : '')+'</b><span class="rprev">'+esc(prev)+'</span></span>'+
+      '<span class="rside">'+(lastG ? '<small>'+dayLabel(lastG.t)+'<br>'+hm(lastG.t)+'</small>' : '')+(n ? '<i class="rn">'+n+'</i>' : '')+'</span></button>';
+  });
+  return h + '</div><p class="rtip">💡 1:1 쪽지는 보낸 사람과 받는 사람만 봐요</p>';
+}
 function vChat(me){
-  var to = V.tmp.to || 'all';
-  var h = backBar() + pageHd('💬', '가족 대화방', '서로 쪽지를 주고받아요', 'linear-gradient(135deg,#4f8cff,#7bdff2)');
-  var list = S.msgs.filter(function(g){ return canSee(g, me); }).slice(-80);
+  if(!V.tmp.urgent && !V.tmp.room) return roomListHtml(me);
+  var room = V.tmp.urgent ? 'all' : V.tmp.room, to = room; V.tmp.to = room;
+  var rm = room==='all' ? null : mem(room);
+  var h = '<div class="top"><button class="back" data-act="back">← 쪽지함</button><div class="rtitle">'+(rm ? mini(rm)+' <b>'+esc(rm.name)+'</b>'+(((esc(rm.name).slice(-1).charCodeAt(0)-44032)%28)?'과':'와')+' 1:1' : '👨‍👩‍👧‍👦 <b>가족 모두</b>')+'</div></div>';
+  var list = S.msgs.filter(function(g){ return V.tmp.urgent ? canSee(g, me) && g.to==='all' : inRoom(g, me.id, room) && !g.urgent; }).slice(-80);
   h += '<div class="chatlist">';
-  if(!list.length) h += '<div class="empty" style="text-align:center;padding:30px 0">아직 쪽지가 없어요.<br>첫 쪽지를 보내 볼까요? 😊</div>';
+  if(!list.length) h += '<div class="empty" style="text-align:center;padding:30px 0">'+(rm ? mini(rm)+'<br>'+esc(rm.name)+'에게 첫 쪽지를 보내 볼까요? 😊<br><small>아래 빠른 말이나 스티커를 눌러도 돼요</small>' : '아직 쪽지가 없어요.<br>첫 쪽지를 보내 볼까요? 😊')+'</div>';
   var lastDay = '';
   list.forEach(function(g){
     var f = mem(g.from) || {name:'누군가', emoji:'🙂', color:'#ccc'}, mine = g.from===me.id, dl = dayLabel(g.t);
     if(dl!==lastDay){ h += '<div class="dsep"><span>'+dl+'</span></div>'; lastDay = dl; }
-    var tgt = g.to==='all' ? '' : (mem(g.to) ? '→ '+esc(mem(g.to).name) : '');
+    var tgt = '';
     if(g.urgent){ h += '<div class="bub urg"><div class="bbox" style="max-width:100%;width:100%"><div class="bwho">🚨 긴급 공지 · '+esc(f.name)+'</div><div class="btx">'+esc(g.text)+'</div><div class="bmeta">'+hm(g.t)+(mine?' <button class="bdel" data-act="cdel" data-v="'+g.id+'">지우기</button>':'')+'</div></div></div>'; return; }
     var readers = Object.keys(g.read||{}).map(function(id){ var m = mem(id); return m ? m.name : ''; }).filter(Boolean);
     var rd = mine ? (readers.length ? '읽음 ✓ '+esc(readers.join('·')) : '아직 안 읽음') : '';
@@ -1468,11 +1489,7 @@ function vChat(me){
     h += '</div><div class="crow"><input class="inp" id="cin" maxlength="200" enterkeyhint="send" placeholder="긴급 공지 내용 쓰기"><button class="csend" style="background:#e03131" data-act="csend">🚨 올리기</button></div></div>';
     return h;
   }
-  h += '<div class="composer"><div class="cto"><span>받는 사람</span>'+
-    '<button data-act="cto" data-v="all" class="'+(to==='all'?'sel':'')+'">👨‍👩‍👧‍👦 모두</button>';
-  S.members.forEach(function(m){ if(m.id===me.id) return;
-    h += '<button data-act="cto" data-v="'+m.id+'" class="'+(to===m.id?'sel':'')+'">'+mini(m)+' '+esc(m.name)+'</button>'; });
-  h += '</div><div class="qrow">';
+  h += '<div class="composer"><div class="qrow">';
   (me.kid ? QUICK_KID : QUICK_PARENT).forEach(function(q){ h += '<button data-act="cq" data-v="'+esc(q)+'">'+esc(q)+'</button>'; });
   h += '</div><div class="qrow stks">';
   STICKERS.forEach(function(s){ h += '<button data-act="cst" data-v="'+s+'">'+s+'</button>'; });
@@ -1582,7 +1599,8 @@ app.addEventListener('click', function(e){
     case 'urgent': go('chat'); V.tmp.urgent = true; render(); say('긴급 공지예요. 가족 모두에게 크게 알릴 내용을 쓰거나 골라요.'); var ui = document.getElementById('cin'); if(ui) ui.focus(); break;
     case 'uoff': V.tmp.urgent = false; render(); break;
     case 'uack': var ug = byId(S.msgs, v); if(ug && me){ ug.read = ug.read || {}; ug.read[me.id] = Date.now(); save(); render(); toast('✅ 긴급 공지를 확인했어요', {kind:'ok'}); } break;
-    case 'chatto': go('chat'); V.tmp.to = v; render(); break;
+    case 'chatto': go('chat'); pushHist(); V.tmp.room = v; render(); break;
+    case 'room': pushHist(); V.tmp = {room:v}; render(); var rin = document.getElementById('cin'); if(rin && !('ontouchstart' in window)) rin.focus(); break;
     case 'cto': V.tmp.to = v; var ci2 = document.getElementById('cin'), cv2 = ci2 ? ci2.value : ''; render(); document.getElementById('cin').value = cv2; break;
     case 'csend': cSend(me, document.getElementById('cin').value); break;
     case 'cq': cSend(me, v); break;
@@ -1787,7 +1805,7 @@ function sfx(kind){
   if(!soundOn()) return;
   try{
     AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-    var seq = {coin:[988,1319], pop:[660,880], fan:[523,659,784,1047], no:[392,311], tap:[880,1175], t0:[330], t1:[392], t2:[494], t3:[587], ok:[784], alarm:[880,660,880,660,880,660]}[kind] || [660];
+    var seq = {coin:[988,1319], pop:[660,880], fan:[523,659,784,1047], no:[392,311], tap:[880,1175], t0:[330], t1:[392], t2:[494], t3:[587], ok:[784], jump:[523,784], power:[523,659,784,988,1319], boom:[196,147,110], alarm:[880,660,880,660,880,660]}[kind] || [660];
     seq.forEach(function(f, i){
       var t = AC.currentTime + i*0.09, o = AC.createOscillator(), g = AC.createGain();
       o.type = kind==='no' ? 'square' : 'triangle'; o.frequency.value = f;
