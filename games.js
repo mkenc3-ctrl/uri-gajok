@@ -182,8 +182,44 @@ function song(el, h){
     '<p>유명한 영어 동요 가사를 듣고<br><b>우리말 뜻</b>을 골라요! (10문제)</p>'+
     '<div class="lvls two2"><button class="lvl" data-m="see"><span>📖</span><b>보고 맞히기</b><small>영어 글자가 보여요</small></button>'+
     '<button class="lvl" data-m="ear"><span>👂</span><b>듣고 맞히기</b><small>소리만 들어요 · 점수 2배</small></button></div>'+
+    '<button class="lvl lall" data-m="all"><span>🎧</span><b>노래 전체 듣기</b><small>영어 가사와 우리말 뜻을 처음부터 끝까지 들어요</small></button>'+
     (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
-  el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); start(b.dataset.m); }; });
+  el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); if(b.dataset.m==='all') listenAll(); else start(b.dataset.m); }; });
+
+  /* 노래 전체 듣기: 영어 한 줄 → 우리말 뜻 한 줄씩 차례로 읽어 줌 */
+  function listenAll(){
+    var html = '<div class="gbar"><span>🎧 노래 전체 듣기</span></div>'+
+      '<button class="big lplay" id="lpall">▶ 모든 노래 연달아 듣기</button><button class="big ghost lplay" id="lpstop">⏹ 멈추기</button><div class="llist">';
+    SONGS.forEach(function(sg, i){
+      html += '<div class="lsong" id="ls'+i+'"><button class="lshd" data-i="'+i+'">'+sg.ic+' <b>'+esc(sg.s)+'</b><span>▶ 듣기</span></button>';
+      sg.l.forEach(function(x, j){ html += '<div class="lline" id="ll'+i+'_'+j+'"><div class="len">'+esc(x[0])+'</div><div class="lko">'+esc(x[1])+'</div></div>'; });
+      html += '</div>';
+    });
+    el.innerHTML = html + '</div>';
+    var run = 0;
+    function mark(id){ el.querySelectorAll('.lline.on').forEach(function(x){ x.classList.remove('on'); }); var n = id && el.querySelector('#'+id); if(n){ n.classList.add('on'); n.scrollIntoView({block:'center', behavior:'smooth'}); } }
+    function play(list){
+      var my = ++run; try{ speechSynthesis.cancel(); }catch(e){}
+      var steps = [];
+      list.forEach(function(i){ SONGS[i].l.forEach(function(x, j){ steps.push({id:'ll'+i+'_'+j, t:x[0], lang:'en-US', rate:0.8}); steps.push({id:'ll'+i+'_'+j, t:x[1], lang:'ko-KR', rate:1}); }); });
+      var k = 0;
+      (function next(){
+        if(my!==run) return;
+        if(k>=steps.length){ mark(null); h.toast && h.toast('🎵 다 들었어요!'); return; }
+        var s = steps[k++]; mark(s.id);
+        try{
+          var u = new SpeechSynthesisUtterance(s.t); u.lang = s.lang; u.rate = s.rate;
+          var v = speechSynthesis.getVoices().filter(function(x){ return x.lang.replace('_','-').indexOf(s.lang)===0; })[0]; if(v) u.voice = v;
+          var gone = false; function go(){ if(gone) return; gone = true; later(next, 250); }
+          u.onend = go; u.onerror = go; later(go, 9000);
+          speechSynthesis.speak(u);
+        }catch(e){ later(next, 1500); }
+      })();
+    }
+    el.querySelector('#lpall').onclick = function(){ play(SONGS.map(function(_, i){ return i; })); };
+    el.querySelector('#lpstop').onclick = function(){ run++; try{ speechSynthesis.cancel(); }catch(e){} mark(null); };
+    el.querySelectorAll('.lshd').forEach(function(b){ b.onclick = function(){ play([+b.dataset.i]); }; });
+  }
 
   function start(mode){
     var all = [];

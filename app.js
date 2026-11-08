@@ -262,12 +262,12 @@ function waiting(kid){ return S.reqs.filter(function(r){ return r.st==='wait' &&
 function addPts(id, n, why){
   var st = S.m[id], before = level(st.points), who = mem(id);
   st.points = Math.max(0, st.points + n);
-  st.coins = (st.coins||0) + n;
+  st.coins = Math.max(0, (st.coins||0) + n);
   st.log.unshift({t:Date.now(), n:n, why:why});
   if(st.log.length>80) st.log.length = 80;
   var after = level(st.points);
   save();
-  toast(who.name+' +'+n+'점 🪙! '+why);
+  toast(who.name+' '+(n>=0?'+'+n:n)+'점 🪙'+(n>=0?'! ':' · ')+why, {kind: n>=0 ? 'ok' : 'no'});
   if(n>0){ confetti(n>=15?24:12); sfx('coin'); }
   if(after>before) setTimeout(function(){ var pt = pet(id); popup(pt.ic, who.name+' 레벨 '+after+'!', '동물 친구가 「'+pt.nm+'」(으)로 자랐어요!'); confetti(40); }, 700);
   checkBadges(id);
@@ -369,6 +369,21 @@ function decide(reqId, ok, note, parent){
   if(!ok) toast('↩️ '+kidName+'에게 「'+(NO_LABEL[r.type]||'다시 해요').replace(/^\S+ /,'')+'」를 보냈어요', {kind:'no'});
   else if(r.type!=='shop') toast('👍 '+kidName+'의 「'+r.text+'」 수락'+(pts ? ' — '+pts+'점을 줬어요' : '했어요'), {title:'수락 완료', kind:'ok'});
   if(!ok) sfx('no');
+}
+
+/* 이미 수락한 미션도 부모님이 「다시 하세요」로 돌려보낼 수 있어요 (받은 점수는 돌려받음) */
+function redoMission(kidId, k, parent, note){
+  var d = day(kidId), ms = d.miss[k], st = S.m[kidId], kid = mem(kidId);
+  if(!ms || ms.st!=='ok' || !kid) return;
+  var m = MISSIONS.filter(function(x){ return x.k===k; })[0], by = parent.role || parent.name;
+  note = note || '다시 해 주세요';
+  addPts(kidId, -m.pts, m.nm+' 다시 하기 ('+by+')');
+  if(d.allBonus){ d.allBonus = false; st.allDays = Math.max(0, (st.allDays||0)-1); addPts(kidId, -ALL_BONUS, '미션 다시 하기 — 모두 완료 보너스 취소'); }
+  ms.st = 'no'; ms.note = note;
+  var r = S.reqs.filter(function(x){ return x.kid===kidId && x.type==='mission' && x.ref===k && x.ds===today() && x.st==='ok'; }).pop();
+  if(r){ r.st = 'no'; r.note = note; r.by = by; r.at = Date.now(); r.seen = false; r.pts = 0; }
+  save(); sfx('no');
+  toast('↩️ '+kid.name+'에게 「'+m.nm+'」 다시 하세요를 보냈어요', {kind:'no'});
 }
 
 /* ---------- 알림·축하 효과 ---------- */
@@ -954,7 +969,7 @@ function vKidView(me){
   var h = backBar() + '<div class="hero" style="background:'+k.color+'"><div class="row"><div class="ava">'+bigFace(k)+'</div><div><div class="nm">'+esc(k.name)+'</div>'+
     '<div class="ttl">레벨 '+level(S.m[k.id].points)+' · '+S.m[k.id].points+'점 · 🔥 연속 '+S.m[k.id].streak+'일</div></div></div></div>';
   h += '<div class="section"><h2>🎯 오늘의 미션</h2>';
-  MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+'</div>'; });
+  MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+(ms.st==='ok' && !(me && me.kid) ? '<button class="redo" data-act="redo" data-v="'+m.k+'">↩ 다시 하세요</button>' : '')+'</div>'; });
   h += '</div><div class="section"><h2>✏️ 숙제 목록</h2>';
   if(!d.hw.length) h += '<div class="empty">적은 숙제가 없어요</div>';
   d.hw.forEach(function(x){ h += '<div class="vrow">'+(x.done?'✔️':'⬜')+' '+esc(x.t)+'</div>'; });
@@ -1046,7 +1061,7 @@ function reqAlert(r, oldSt){
     sfx('pop'); try{ if(navigator.vibrate) navigator.vibrate(150); }catch(e){}
     toast('📥 '+kid.name+': '+r.text, {title:'새 보고가 왔어요', face:face(kid), kind:'send', sys:true, long:true,
       say: kid.name+'이 '+r.text+' 보고를 보냈어요. 확인해 주세요.'});
-  } else if(oldSt==='wait' && r.st!=='wait'){
+  } else if(oldSt && oldSt!==r.st && r.st!=='wait'){
     if(me && me.kid && me.id!==r.kid) return;
     if(me && !me.kid) return;                                   // 다른 부모님이 처리한 것은 조용히
     var ok = r.st==='ok';
@@ -1198,6 +1213,13 @@ app.addEventListener('click', function(e){
     case 'cst': cSend(me, v, true); break;
     case 'cdel': var gm = byId(S.msgs, v); if(gm && gm.from===me.id && confirm('이 쪽지를 지울까요?')){ S.msgs = S.msgs.filter(function(g){ return g.id!==v; }); save(); render(); } break;
     case 'kidview': V.kid = v; go('kid'); break;
+    case 'redo':
+      if(me && !me.kid && V.kid){
+        var rm = MISSIONS.filter(function(x){ return x.k===v; })[0];
+        var rn = prompt('「'+rm.nm+'」을(를) 다시 하라고 보낼까요? 받은 '+rm.pts+'점은 돌려받아요. 아이에게 한마디 (안 써도 돼요)', '');
+        if(rn!==null){ redoMission(V.kid, v, me, rn.trim()); render(); }
+      }
+      break;
     case 'seen': S.reqs.forEach(function(r){ if(r.kid===me.id && r.st!=='wait') r.seen = true; }); save(); render(); break;
     case 'mreport': proofStart(me, v); break;
     case 'mna':

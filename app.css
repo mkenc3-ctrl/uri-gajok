@@ -417,3 +417,15 @@ button:disabled{opacity:.4}
 /* ---------- 미션 인증 사진 ---------- */
 .rphoto{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:16px;margin:8px 0;background:#f4ecdc;min-height:120px}
 .vphoto{display:block;width:120px;height:120px;object-fit:cover;border-radius:12px;margin:6px 0 2px 28px;background:#f4ecdc}
+/* 다시 하세요 버튼 · 노래 전체 듣기 */
+.redo{display:inline-block;margin:6px 0 2px 28px;padding:8px 14px;border-radius:14px;background:#fff0f0;color:#c92a2a;font-size:17px;box-shadow:0 3px 0 #f5c2c2}
+.redo:active{transform:translateY(2px)}
+.lvl.lall{width:100%;margin-top:10px}
+.lplay{margin-top:8px}
+.llist{margin-top:12px}
+.lsong{background:#fff;border-radius:18px;padding:10px 12px;margin-bottom:12px;box-shadow:0 3px 0 #eadfc6}
+.lshd{display:flex;width:100%;align-items:center;gap:8px;font-size:20px;text-align:left;padding:4px 0}
+.lshd b{font-weight:400;flex:1}.lshd span{font-size:16px;background:#ffd84d;border-radius:12px;padding:6px 12px}
+.lline{padding:8px 10px;border-radius:12px;margin-top:4px;transition:background .2s}
+.lline .len{font-size:18px}.lline .lko{font-size:16px;color:var(--sub)}
+.lline.on{background:#fff3b0}
