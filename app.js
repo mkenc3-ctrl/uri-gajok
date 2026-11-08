@@ -572,7 +572,7 @@ function startAlbum(){
     document.getElementById('albumcap').textContent = '📸 '+PHOTOS[albumI].cap;
   }, 4000);
 }
-function backBar(to){ return '<div class="top"><button class="back" data-act="'+(to||'me')+'">← '+(to==='home'?'처음으로':'내 화면')+'</button><div style="flex:1"></div></div>'; }
+function backBar(to){ return '<div class="top"><button class="back" data-act="'+(to||'me')+'">← '+(to==='home'?'처음으로':'내 화면')+'</button><div style="flex:1"></div>'+'<button class="refresh" data-act="refresh" aria-label="새로고침">🔄 새로고침</button>'+'</div>'; }
 var HD_PHOTO = {'숙제 끝내기':'p11','외출 보고':'p12','자유시간':'p03','마감 보고':'p07','칭찬 보내기':'p02','가족 설정':'p10'};
 function pageHd(ic, title, sub, bg){
   var ph = HD_PHOTO[title]; if(ph && !hasPhoto(ph)) ph = PHOTOS.length ? PHOTOS[title.length % PHOTOS.length].f : null;
@@ -601,7 +601,7 @@ function vWho(){
 /* ---------- 처음 화면 ---------- */
 function vHome(){
   var wait = waiting().length;
-  var h = '<div class="top"><h1>🏠 우리 가족 하루</h1><button class="gear" data-act="voice" aria-label="음성 안내 켜고 끄기">'+(voiceOn()?'🗣️':'🤐')+'</button><button class="gear" data-act="snd" aria-label="소리 켜고 끄기">'+(soundOn()?'🔊':'🔇')+'</button><button class="gear" data-act="settings" aria-label="가족 설정">⚙️</button></div>'+
+  var h = '<div class="top"><h1>🏠 우리 가족 하루</h1><button class="gear" data-act="voice" aria-label="음성 안내 켜고 끄기">'+(voiceOn()?'🗣️':'🤐')+'</button><button class="gear" data-act="snd" aria-label="소리 켜고 끄기">'+(soundOn()?'🔊':'🔇')+'</button><button class="gear" data-act="refresh" aria-label="새로고침">🔄</button><button class="gear" data-act="settings" aria-label="가족 설정">⚙️</button></div>'+
     urgentHtml(null) + '<div class="date">'+koDate()+'</div>';
   var lastMe = null; try{ lastMe = mem(localStorage.getItem('fam-last')); }catch(e){}
   if(lastMe) h += '<button class="quickme" data-act="pick" data-id="'+lastMe.id+'">'+mini(lastMe)+' <b>'+esc(lastMe.name)+'</b> 화면으로 바로 가기'+(unread(lastMe.id)?' <span class="nb">💬 '+unread(lastMe.id)+'</span>':'')+' ›</button>';
@@ -1240,6 +1240,10 @@ app.addEventListener('click', function(e){
   var a = b.getAttribute('data-act'), v = b.getAttribute('data-v'), me = V.id ? mem(V.id) : null, d;
   switch(a){
     case 'home': go('home'); break;
+    case 'refresh':
+      try{ sessionStorage.setItem('fam-back', JSON.stringify({screen:V.screen, id:V.id, kid:V.kid})); }catch(e){}
+      toast('🔄 새로 불러오는 중…', {say:false});
+      setTimeout(function(){ location.reload(); }, 150); break;
     case 'who': go('who'); break;
     case 'whopick':
       var wh = mem(b.getAttribute('data-id')); if(!wh) break;
@@ -1516,6 +1520,10 @@ async function boot(){
   if(cloudOk && Cloud.user){
     app.innerHTML = '<div class="loading">☁️ 가족 소식 불러오는 중…</div>';
     try{ await cloudStart(); }catch(e){ toast('서버에 연결하지 못했어요. 이 기기 기록으로 보여 줄게요'); }
+  }
+  var back = null; try{ back = JSON.parse(sessionStorage.getItem('fam-back')||'null'); sessionStorage.removeItem('fam-back'); }catch(e){}
+  if(back && V.screen==='home' && (!back.id || mem(back.id)) && ['play','login'].indexOf(back.screen)<0){
+    V.screen = back.screen || 'home'; V.id = back.id; V.kid = back.kid; render(); toast('✅ 새로 불러왔어요', {kind:'ok', say:false}); return;
   }
   var owner = null; try{ owner = mem(localStorage.getItem('fam-owner')); }catch(e){}
   var asked = null; try{ asked = localStorage.getItem('fam-asked'); }catch(e){}

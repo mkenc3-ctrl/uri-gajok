@@ -482,3 +482,4 @@ body.hasnav #nav{display:flex}
 .whoskip{display:block;width:100%;margin:22px 0 10px;padding:14px;border-radius:18px;background:#f1f3f5;font-size:17px}
 .whoagain{display:block;width:100%;margin:8px 0;padding:10px;border-radius:16px;background:#fff;border:2px dashed #c9b98a;font-size:16px}
 .whof{font-size:60px;line-height:1}.whof img{border-radius:50%;object-fit:cover;display:block}
+.refresh{background:#fff;border-radius:999px;padding:8px 14px;font-size:16px;box-shadow:0 3px 0 var(--line)}.refresh:active{transform:translateY(2px)}

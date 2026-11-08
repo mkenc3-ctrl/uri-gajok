@@ -469,7 +469,7 @@ function spot(el, h){
 window.Games = {
   list: [
     {k:'pmatch', ic:'🧠', nm:'가족 사진 짝 맞추기', how:'쉬움·보통·어려움 · 처음에 잠깐 보여 줘요', unit:'점', high:true},
-    {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 3단계', unit:'점', high:true},
+    {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 4단계', unit:'점', high:true},
     {k:'song',   ic:'🎤', nm:'노래 번역 퀴즈', how:'인기 팝송 · 귀멸의 칼날 일본어 · 전체 듣기',       unit:'점', high:true},
     {k:'gugu',   ic:'✖️', nm:'구구단 퀴즈',         how:'60초 동안 몇 개 맞힐까?',               unit:'개', high:true}
   ],
