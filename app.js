@@ -484,12 +484,13 @@ function guide(from){
 function navBar(me){
   var nav = document.getElementById('nav');
   if(!nav){ nav = document.createElement('nav'); nav.id = 'nav'; document.body.appendChild(nav); }
-  var show = me && ['home','login','play','settings'].indexOf(V.screen)<0;
+  var show = me && ['home','who','login','play','settings'].indexOf(V.screen)<0;
   document.body.classList.toggle('hasnav', !!show);
   if(!show){ nav.innerHTML = ''; return; }
   var un = unread(me.id), sc = V.screen;
   function it(act, ic, nm, on, extra){ return '<button data-act="'+act+'" class="'+(on?'on':'')+'"><span class="ni">'+ic+'</span>'+nm+(extra||'')+'</button>'; }
-  nav.innerHTML = it('me', '🏠', '내 화면', sc==='me') +
+  nav.innerHTML = it('home', '🏠', '처음으로', false) +
+    it('me', '🙂', '내 화면', sc==='me') +
     it('chat', '💬', '대화', sc==='chat', un ? '<i class="nbd">'+un+'</i>' : '') +
     it('games', me.kid && !freeOpen(me.id) ? '🔒' : '🕹️', '게임', sc==='games') +
     it('urgent', '🚨', '긴급', false);
@@ -505,7 +506,7 @@ function render(){
   var me = V.id ? mem(V.id) : null;
   if(me) document.documentElement.style.setProperty('--me', me.color);
   if(window.Games) Games.stop();
-  var f = {login:vLogin, shop:vShop, home:vHome, me:(me && !me.kid ? vParent : vKid), hw:vHw, out:vOut, free:vFree, report:vReport,
+  var f = {who:vWho, login:vLogin, shop:vShop, home:vHome, me:(me && !me.kid ? vParent : vKid), hw:vHw, out:vOut, free:vFree, report:vReport,
            praise:vPraise, kid:vKidView, settings:vSettings, games:vGames, play:vPlay, chat:vChat}[V.screen] || vHome;
   app.innerHTML = f(me);
   navBar(me);
@@ -586,6 +587,17 @@ function memoryHtml(){
     '<div style="margin-top:8px;font-size:18px">'+esc(mp.cap)+'</div><button data-act="memnext">🔄 다른 사진 보기</button></div>';
 }
 
+/* ---------- 누구예요? (이 휴대폰 주인 고르기) ---------- */
+function vWho(){
+  var h = '<div class="who"><div class="whohd"><div class="whoic">👋</div><h1>누구예요?</h1><p>이 휴대폰을 쓰는 사람을 눌러 주세요.<br>다음부터는 앱을 켜면 <b>바로 내 화면</b>이 열려요.</p></div>';
+  h += '<div class="whosec">🧒 아이들</div><div class="whogrid">';
+  kids().forEach(function(mb){ h += '<button class="whob" data-act="whopick" data-id="'+mb.id+'" style="border-color:'+mb.color+'"><span class="whof">'+bigFace(mb)+'</span><b>'+esc(mb.name)+'</b></button>'; });
+  h += '</div><div class="whosec">👨‍👩‍👧‍👦 부모님</div><div class="whogrid two">';
+  parents().forEach(function(mb){ h += '<button class="whob" data-act="whopick" data-id="'+mb.id+'" style="border-color:'+mb.color+'"><span class="whof">'+bigFace(mb)+'</span><b>'+esc(mb.name)+'</b><small>'+esc(mb.role)+'</small></button>'; });
+  h += '</div><button class="whoskip" data-act="whoskip">👨‍👩‍👧‍👦 여러 명이 같이 써요 (처음 화면으로)</button></div>';
+  return h;
+}
+
 /* ---------- 처음 화면 ---------- */
 function vHome(){
   var wait = waiting().length;
@@ -593,6 +605,7 @@ function vHome(){
     urgentHtml(null) + '<div class="date">'+koDate()+'</div>';
   var lastMe = null; try{ lastMe = mem(localStorage.getItem('fam-last')); }catch(e){}
   if(lastMe) h += '<button class="quickme" data-act="pick" data-id="'+lastMe.id+'">'+mini(lastMe)+' <b>'+esc(lastMe.name)+'</b> 화면으로 바로 가기'+(unread(lastMe.id)?' <span class="nb">💬 '+unread(lastMe.id)+'</span>':'')+' ›</button>';
+  h += '<button class="whoagain" data-act="who">👋 나는 누구? 이 휴대폰 주인 고르기</button>';
   if(wait) h += '<div class="alarm">📥 부모님 확인을 기다리는 보고가 <b>'+wait+'개</b> 있어요</div>';
   h += '<div class="hello">👨‍👩‍👧‍👦 부모님</div><div class="members">';
   parents().forEach(function(mb){
@@ -665,7 +678,7 @@ function vKid(me){
   // 오늘의 미션
   h += '<div class="mission"><div class="mhd"><h2>🎯 오늘의 미션</h2><span>'+mc+' / '+MISSIONS.length+'</span></div>'+
     '<div class="bar mbar"><i style="width:'+(mc*100/MISSIONS.length)+'%"></i></div>'+
-    '<p class="msub">미션을 끝내면 <b>📷 사진을 찍어</b> 보고해요. 4개를 부모님이 모두 확인해 주면 <b>🎮 자유시간</b>이 열려요!</p>';
+    '<p class="msub">미션을 끝내면 <b>보고하기</b>를 눌러요. 📷 사진은 보내고 싶을 때만! 4개를 부모님이 모두 확인해 주면 <b>🎮 자유시간</b>이 열려요!</p>';
   MISSIONS.forEach(function(m){
     var ms = d.miss[m.k] || {}, s2 = ms.st || '';
     h += '<div class="mrow s-'+(s2||'none')+'"><span class="mic">'+m.ic+'</span><div class="mtx"><b>'+m.nm+'</b><small>'+
@@ -673,7 +686,7 @@ function vKid(me){
     if(s2==='ok') h += '<span class="mdone">✅</span>';
     else if(s2==='wait') h += '<button class="mbtn ghost" data-act="mcancel" data-v="'+m.k+'">취소</button>';
     else if(m.k==='hw') h += '<button class="mbtn" data-act="hw">숙제 보기</button>';
-    else h += '<button class="mbtn" data-act="mreport" data-v="'+m.k+'">📷 사진 찍고 보고</button>';
+    else h += '<span class="mbtns"><button class="mbtn" data-act="mquick" data-v="'+m.k+'">보고하기</button><button class="mbtn ghost mcam" data-act="mreport" data-v="'+m.k+'" aria-label="사진도 함께 보내기">📷</button></span>';
     h += '</div>';
     if(m.na && !s2) h += '<button class="mna" data-act="mna" data-v="'+m.k+'">'+m.na+'</button>';
   });
@@ -713,7 +726,7 @@ function nextHtml(me, d, open, freeNow){
     var re = (d.miss[nx.k]||{}).st==='no';
     h += '<div class="nxl">'+(re?'↩️ 다시 해야 할 일':'👉 지금 할 일')+'</div><div class="nxm"><span>'+nx.ic+'</span><b>'+nx.nm+'</b></div>'+
       (re && d.miss[nx.k].note ? '<div class="nxn">부모님: 「'+esc(d.miss[nx.k].note)+'」</div>' : '')+
-      (nx.k==='hw' ? '<button class="nxb" data-act="hw">✏️ 숙제 보러 가기</button>' : '<button class="nxb" data-act="mreport" data-v="'+nx.k+'">📷 다 했어요! 사진 찍고 보고</button>')+
+      (nx.k==='hw' ? '<button class="nxb" data-act="hw">✏️ 숙제 보러 가기</button>' : '<button class="nxb" data-act="mquick" data-v="'+nx.k+'">✅ 다 했어요! 보고하기</button><button class="nxs" data-act="mreport" data-v="'+nx.k+'">📷 사진도 함께 보내기</button>')+
       (nx.na ? '<button class="nxs" data-act="mna" data-v="'+nx.k+'">'+nx.na+'</button>' : '');
   }
   else if(!open) h += '<div class="nxl">⏳ 부모님 확인을 기다려요</div><div class="nxn">미션을 다 보고했어요. 확인해 주시면 자유시간이 열려요!</div>';
@@ -735,7 +748,7 @@ function proofStart(me, k){
   proofPending = {id:me.id, k:k};
   var inp = document.getElementById('proofin'); inp.value = '';
   inp.click();
-  say('미션을 끝낸 모습을 사진으로 찍어 주세요.');
+  say('사진을 찍거나 골라 주세요.');
 }
 async function proofPicked(file){
   var p = proofPending; proofPending = null; if(!p || !file) return;
@@ -806,7 +819,8 @@ function vHw(me){
     var y = peekDay(me.id, dayBefore(today()));
     if(y.hw.length && !d.hw.length) h += '<button class="big ghost" data-act="hwcopy">📋 어제 목록 그대로 가져오기</button>';
     var all = d.hw.length===0 || done===d.hw.length;
-    h += '<button class="big" data-act="mreport" data-v="hw"'+(all?'':' disabled')+'>📷 숙제 다 했어요! 사진 찍고 보고</button>';
+    h += '<button class="big" data-act="mquick" data-v="hw"'+(all?'':' disabled')+'>✅ 숙제 다 했어요! 보고하기</button>'+
+      '<button class="big ghost addphoto" data-act="mreport" data-v="hw"'+(all?'':' disabled')+'>📷 사진도 함께 보내기</button>';
     if(!all) h += '<div class="empty">모든 숙제에 체크하면 보고할 수 있어요</div>';
   }
   return h;
@@ -1226,6 +1240,16 @@ app.addEventListener('click', function(e){
   var a = b.getAttribute('data-act'), v = b.getAttribute('data-v'), me = V.id ? mem(V.id) : null, d;
   switch(a){
     case 'home': go('home'); break;
+    case 'who': go('who'); break;
+    case 'whopick':
+      var wh = mem(b.getAttribute('data-id')); if(!wh) break;
+      if(!wh.kid && S.pin && prompt(wh.role+' 잠금 번호를 넣어 주세요')!==S.pin){ toast('번호가 맞지 않아요'); return; }
+      try{ localStorage.setItem('fam-owner', wh.id); localStorage.setItem('fam-asked', '1'); localStorage.setItem('fam-last', wh.id); }catch(e){}
+      toast('📱 이 휴대폰은 '+wh.name+' 것으로 정했어요', {kind:'ok', say:false});
+      go('me', wh.id); break;
+    case 'whoskip':
+      try{ localStorage.setItem('fam-asked', '1'); localStorage.removeItem('fam-owner'); }catch(e){}
+      go('home'); break;
     case 'owner':
       if(!me) break;
       var cur = null; try{ cur = localStorage.getItem('fam-owner'); }catch(e){}
@@ -1265,6 +1289,7 @@ app.addEventListener('click', function(e){
       break;
     case 'seen': S.reqs.forEach(function(r){ if(r.kid===me.id && r.st!=='wait') r.seen = true; }); save(); render(); break;
     case 'mreport': proofStart(me, v); break;
+    case 'mquick': missReport(me, v); if(V.screen==='hw') go('me'); break;
     case 'mna':
       var mm = MISSIONS.filter(function(x){ return x.k===v; })[0];
       day(me.id).miss[v] = {st:'wait', t:Date.now()};
@@ -1493,7 +1518,9 @@ async function boot(){
     try{ await cloudStart(); }catch(e){ toast('서버에 연결하지 못했어요. 이 기기 기록으로 보여 줄게요'); }
   }
   var owner = null; try{ owner = mem(localStorage.getItem('fam-owner')); }catch(e){}
+  var asked = null; try{ asked = localStorage.getItem('fam-asked'); }catch(e){}
   if(owner && V.screen==='home'){ V.screen = 'me'; V.id = owner.id; }
+  else if(!asked && V.screen==='home' && S.members.length){ V.screen = 'who'; render(); say('누구예요? 이 휴대폰을 쓰는 사람을 눌러 주세요.'); return; }
   render();
   if(owner) guide('home');
 }
