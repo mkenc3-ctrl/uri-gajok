@@ -539,3 +539,40 @@ body.hasnav #nav{display:flex}
 .scap{color:#fff;text-align:center;font-size:19px;padding:10px 12px 4px}
 .sctl{display:flex;justify-content:center;gap:10px;padding:8px 8px calc(14px + env(safe-area-inset-bottom))}
 .sctl button{background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:10px 18px;font-size:19px}
+/* 가족 일정 */
+.upcard{display:block;width:100%;text-align:left;background:#f3f0ff;border-radius:20px;padding:12px 14px;margin:12px 0;box-shadow:0 3px 0 #d0bfff}
+.uphd{font-size:18px;display:flex;justify-content:space-between}.uphd span{font-size:14px;color:#7950f2}
+.uprow{font-size:17px;margin-top:6px}.uprow b{font-weight:400;background:#fff;border-radius:8px;padding:1px 8px;margin-right:4px}.uprow b.td{background:#7950f2;color:#fff}
+.uprow small{color:var(--sub)}
+.evic{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+.evic button{background:#f8f9fa;border-radius:14px;padding:6px 2px;font-size:13px;display:flex;flex-direction:column;align-items:center}
+.evic button span{font-size:24px}
+.evic button.on,.evwho button.on{background:#e5dbff;outline:2px solid #7950f2}
+.evrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.evrow label{font-size:14px;color:var(--sub)}
+.evwho{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.evwho button{background:#f8f9fa;border-radius:999px;padding:6px 12px;font-size:16px;display:flex;align-items:center;gap:4px}
+.evwho .mini{width:24px;height:24px}
+.evday{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px;font-size:17px}
+.evday b{font-weight:400}.dd{font-size:14px;background:#f1f3f5;border-radius:999px;padding:2px 10px}.dd.td{background:#7950f2;color:#fff}
+.evitem{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:2px dashed var(--line)}
+.eic{font-size:28px}.etx{flex:1}.etx b{font-weight:400;font-size:18px;display:block}.etx small{color:var(--sub);font-size:13px}
+/* 용돈 기입장 */
+.mbal{font-size:34px;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.mkids{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}
+.mkids button{flex:1;min-width:96px;background:#fff;border-radius:16px;padding:8px;font-size:16px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 2px 0 var(--line)}
+.mkids button small{color:var(--sub);font-size:13px}.mkids button.on{outline:3px solid #ffd84d}
+.mio{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mio button{padding:12px;border-radius:16px;background:#f1f3f5;font-size:19px}
+.mio button.on.in{background:#d3f9d8;outline:2px solid #22b573}.mio button.on.out{background:#ffe3e3;outline:2px solid #ff6b6b}
+.mcats{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.mcats button{background:#f8f9fa;border-radius:999px;padding:7px 12px;font-size:16px}
+.mcats button.on{background:#ffd84d}
+.mamtrow{display:flex;align-items:center;gap:8px}.mamtrow .inp{font-size:24px}.mamtrow span{font-size:20px}
+.mquick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.mquick button{background:#fff7e0;border-radius:12px;padding:6px 10px;font-size:15px;box-shadow:0 2px 0 #f0d98a}
+.mitem{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:2px dashed var(--line)}
+.mdt{width:42px;color:var(--sub);font-size:14px}.mtx{flex:1}.mtx b{font-weight:400;font-size:17px;display:block}.mtx small{color:var(--sub);font-size:13px}
+.mamt{font-size:18px}.mamt.in{color:#2b8a3e}.mamt.out{color:#e03131}
+.pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pbtns .wide{margin:6px 0}

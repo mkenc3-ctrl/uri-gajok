@@ -110,6 +110,8 @@ function fixUp(){
   if(!S.rewards) S.rewards = JSON.parse(JSON.stringify(DEFAULT_REWARDS));
   if(!S.caps) S.caps = {};
   if(!S.msgs) S.msgs = [];
+  if(!S.events) S.events = [];
+  if(!S.money) S.money = [];
   S.members.forEach(function(mb){
     var def = DEFAULT_MEMBERS.filter(function(d){ return d.id===mb.id; })[0];
     if(def){ if(!mb.role) mb.role = def.role; mb.kid = def.kid; }
@@ -136,6 +138,8 @@ function rowsOf(){
   Object.keys(S.days).forEach(function(ds){ Object.keys(S.days[ds]).forEach(function(id){ rows['d:'+ds+':'+id] = S.days[ds][id]; }); });
   S.reqs.forEach(function(r){ rows['r:'+r.id] = r; });
   S.msgs.forEach(function(g){ rows['g:'+g.id] = g; });
+  (S.events||[]).forEach(function(e){ rows['e:'+e.id] = e; });
+  (S.money||[]).forEach(function(a){ rows['a:'+a.id] = a; });
   return rows;
 }
 function applyRow(k, v){
@@ -146,6 +150,14 @@ function applyRow(k, v){
   else if(p[0]==='g'){
     S.msgs = (S.msgs||[]).filter(function(g){ return g.id!==p[1]; });
     if(v){ S.msgs.push(v); S.msgs.sort(function(a,b){ return a.t-b.t; }); }
+  }
+  else if(p[0]==='e'){
+    S.events = (S.events||[]).filter(function(e){ return e.id!==p[1]; });
+    if(v) S.events.push(v);
+  }
+  else if(p[0]==='a'){
+    S.money = (S.money||[]).filter(function(a){ return a.id!==p[1]; });
+    if(v) S.money.push(v);
   }
   else if(p[0]==='r'){
     S.reqs = S.reqs.filter(function(r){ return r.id!==p[1]; });
@@ -172,9 +184,14 @@ function onRemote(p){
   if(lastSent[k]===s) return;                    // 내가 올린 것이 되돌아온 것
   if(s===undefined) delete lastSent[k]; else lastSent[k] = s;
   var isNewMsg = k.indexOf('g:')===0 && v && !byId(S.msgs||[], v.id);
+  var isNewEv = k.indexOf('e:')===0 && v && !byId(S.events||[], v.id);
   var oldReq = k.indexOf('r:')===0 && v ? byId(S.reqs, v.id) : null, oldSt = oldReq ? oldReq.st : null;
   applyRow(k, v); fixUp(); saveLocal();
   if(isNewMsg) msgAlert(v);
+  if(isNewEv && V.id && v.by!==V.id && (v.who==='all' || v.who===V.id)){
+    var eb = mem(v.by) || {name:'가족'};
+    toast('📅 '+evDay(v.ds)+' '+(v.tm?v.tm+' ':'')+v.title, {title:'새 일정 — '+eb.name, kind:'msg', sys:true, say:eb.name+'이 새 일정을 적었어요. '+evDay(v.ds)+', '+v.title});
+  }
   if(k.indexOf('r:')===0 && v) reqAlert(v, oldReq ? oldSt : null);
   clearTimeout(remoteT); remoteT = setTimeout(refreshSoft, 250);
 }
@@ -511,6 +528,8 @@ function guide(from){
   else if(sc==='shop') t = '보상 상점이에요. 모은 코인으로 갖고 싶은 걸 골라요.';
   else if(sc==='chat') t = '가족 대화방이에요. 받는 사람을 고르고 쪽지를 보내요.';
   else if(sc==='games') t = '게임방이에요. 하고 싶은 게임을 골라요.';
+  else if(sc==='cal') t = '가족 일정이에요. 생일이나 병원 가는 날을 적으면 가족 모두에게 알려 줘요.';
+  else if(sc==='money') t = '용돈 기입장이에요. 들어온 돈과 쓴 돈을 적어요.';
   else if(sc==='praise') t = '칭찬 보내기예요. 아이와 칭찬을 골라서 보내요.';
   if(t) say(t, true);
 }
@@ -539,7 +558,7 @@ function render(){
   var me = V.id ? mem(V.id) : null;
   if(me) document.documentElement.style.setProperty('--me', me.color);
   if(window.Games) Games.stop();
-  var f = {who:vWho, login:vLogin, shop:vShop, home:vHome, me:(me && !me.kid ? vParent : vKid), hw:vHw, out:vOut, free:vFree, report:vReport,
+  var f = {cal:vCal, money:vMoney, who:vWho, login:vLogin, shop:vShop, home:vHome, me:(me && !me.kid ? vParent : vKid), hw:vHw, out:vOut, free:vFree, report:vReport,
            praise:vPraise, kid:vKidView, settings:vSettings, games:vGames, play:vPlay, chat:vChat}[V.screen] || vHome;
   app.innerHTML = f(me);
   navBar(me);
@@ -695,11 +714,94 @@ function feedHtml(max){
   return h + '</div>';
 }
 
+/* ---------- 가족 일정 ---------- */
+var EV_IC = [['🎂','생일'],['🏥','병원'],['🏫','학교'],['🎹','학원'],['📝','시험'],['✈️','여행'],['🍽️','외식'],['🎉','행사'],['📌','기타']];
+function dsAdd(ds, n){ var p = ds.split('-'), d = new Date(+p[0], +p[1]-1, +p[2]); d.setDate(d.getDate()+n); return dstr(d); }
+function dDiff(ds){ var p = ds.split('-'), a = new Date(+p[0], +p[1]-1, +p[2]), t = new Date(); t.setHours(0,0,0,0); return Math.round((a - t)/86400000); }
+function evDay(ds){ var n = dDiff(ds); if(n===0) return '오늘'; if(n===1) return '내일'; if(n===2) return '모레'; var p = ds.split('-'); return (+p[1])+'월 '+(+p[2])+'일'; }
+function evWhen(ds){ var p = ds.split('-'), wd = '일월화수목금토'.charAt(new Date(+p[0], +p[1]-1, +p[2]).getDay()); return (+p[1])+'월 '+(+p[2])+'일 ('+wd+')'; }
+function evFor(e, me){ return !me || e.who==='all' || e.who===me.id; }
+function evSort(a, b){ return a.ds<b.ds ? -1 : a.ds>b.ds ? 1 : (a.tm||'99')<(b.tm||'99') ? -1 : 1; }
+function upcomingHtml(me){
+  var td = today(), tm = dsAdd(td, 1);
+  var list = (S.events||[]).filter(function(e){ return (e.ds===td || e.ds===tm) && evFor(e, me); }).sort(evSort);
+  if(!list.length) return '';
+  var h = '<button class="upcard" data-act="cal"><div class="uphd">📅 오늘·내일 일정 <span>전체 보기 ›</span></div>';
+  list.slice(0, 4).forEach(function(e){
+    var w = e.who==='all' ? '가족 모두' : (mem(e.who)||{}).name || '';
+    h += '<div class="uprow"><b class="'+(e.ds===td?'td':'')+'">'+evDay(e.ds)+'</b> '+e.ic+' '+(e.tm?'<span class="tm">'+e.tm+'</span> ':'')+esc(e.title)+' <small>· '+esc(w)+'</small></div>';
+  });
+  return h + '</button>';
+}
+function vCal(me){
+  var t = V.tmp, h = backBar() + pageHd('📅', '가족 일정', '생일·병원·학교 행사를 함께 적어 두면 모두에게 알려 줘요', 'linear-gradient(135deg,#7950f2,#b197fc)');
+  if(!t.eic) t.eic = '📌'; if(!t.ewho) t.ewho = 'all';
+  h += '<div class="section"><h2>✏️ 일정 적기</h2><div class="evic">';
+  EV_IC.forEach(function(x){ h += '<button class="'+(t.eic===x[0]?'on':'')+'" data-act="eic" data-v="'+x[0]+'"><span>'+x[0]+'</span>'+x[1]+'</button>'; });
+  h += '</div><input class="inp" id="etitle" maxlength="40" placeholder="예) 담원이 생일, 치과 가는 날" value="'+esc(t.etitle||'')+'">'+
+    '<div class="evrow"><label>날짜<input class="inp" id="edate" type="date" value="'+(t.edate||today())+'"></label><label>시간 (안 써도 돼요)<input class="inp" id="etime" type="time" value="'+(t.etime||'')+'"></label></div>'+
+    '<div class="lb">누구 일정이에요?</div><div class="evwho"><button class="'+(t.ewho==='all'?'on':'')+'" data-act="ewho" data-v="all">👨‍👩‍👧‍👦 가족 모두</button>';
+  S.members.forEach(function(mb){ h += '<button class="'+(t.ewho===mb.id?'on':'')+'" data-act="ewho" data-v="'+mb.id+'">'+mini(mb)+' '+esc(mb.name)+'</button>'; });
+  h += '</div><button class="big" style="background:#7950f2" data-act="eadd">📅 일정 올리기</button></div>';
+  var td = today(), list = (S.events||[]).filter(function(e){ return e.ds>=td; }).sort(evSort);
+  h += '<div class="section"><h2>🗓️ 다가오는 일정</h2>';
+  if(!list.length) h += '<div class="empty">아직 적힌 일정이 없어요</div>';
+  var last = '';
+  list.slice(0, 40).forEach(function(e){
+    if(e.ds!==last){ last = e.ds; var n = dDiff(e.ds); h += '<div class="evday"><b>'+evWhen(e.ds)+'</b><span class="dd'+(n===0?' td':'')+'">'+(n===0?'오늘':'D-'+n)+'</span></div>'; }
+    var w = e.who==='all' ? '가족 모두' : (mem(e.who)||{}).name || '', by = mem(e.by);
+    var mine = me && (e.by===me.id || !me.kid);
+    h += '<div class="evitem"><span class="eic">'+e.ic+'</span><div class="etx"><b>'+(e.tm?e.tm+' ':'')+esc(e.title)+'</b><small>'+esc(w)+(by?' · '+esc(by.name)+'이(가) 적음':'')+'</small></div>'+
+      (mine ? '<button class="bdel" data-act="edel" data-v="'+e.id+'">지우기</button>' : '')+'</div>';
+  });
+  return h + '</div>';
+}
+function keepEvInputs(){ var a = document.getElementById('etitle'); if(!a) return; V.tmp.etitle = a.value; V.tmp.edate = document.getElementById('edate').value; V.tmp.etime = document.getElementById('etime').value; }
+
+/* ---------- 용돈 기입장 ---------- */
+var M_IN = ['💵 용돈','🧧 세뱃돈','🧹 심부름','🎁 선물','🪙 기타'], M_OUT = ['🍭 간식','✏️ 문구','🧸 장난감','📚 책','🐷 저금','🛍️ 기타'];
+function won(n){ return (n||0).toLocaleString('ko-KR')+'원'; }
+function moneyOf(id){ return (S.money||[]).filter(function(a){ return a.kid===id; }); }
+function moneyBal(id){ return moneyOf(id).reduce(function(s, a){ return s + (a.io==='in' ? a.amt : -a.amt); }, 0); }
+function vMoney(me){
+  var k = me.kid ? me : mem(V.kid); if(!k) return backBar()+'<div class="empty">아이를 먼저 골라 주세요</div>';
+  var t = V.tmp; if(!t.mio) t.mio = me.kid ? 'out' : 'in';
+  var cats = t.mio==='in' ? M_IN : M_OUT; if(cats.indexOf(t.mcat)<0) t.mcat = cats[0];
+  var mon = today().slice(0, 7), list = moneyOf(k.id).sort(function(a,b){ return b.ds<a.ds ? -1 : b.ds>a.ds ? 1 : b.t-a.t; });
+  var mIn = 0, mOut = 0; list.forEach(function(a){ if(a.ds.slice(0,7)===mon){ if(a.io==='in') mIn += a.amt; else mOut += a.amt; } });
+  var bal = moneyBal(k.id);
+  var h = backBar();
+  if(!me.kid){ h += '<div class="mkids">'; kids().forEach(function(x){ h += '<button class="'+(x.id===k.id?'on':'')+'" data-act="money" data-v="'+x.id+'">'+mini(x)+' '+esc(x.name)+'<small>'+won(moneyBal(x.id))+'</small></button>'; }); h += '</div>'; }
+  h += '<div class="hero"'+heroBg(k)+'><div class="row"><div class="ava">'+bigFace(k)+'</div><div><div class="nm">'+esc(k.name)+'의 용돈 기입장</div>'+
+    '<div class="ttl">지금 남은 돈</div><div class="mbal">'+won(bal)+'</div></div></div>'+
+    '<div class="chips"><span class="chip">📥 이번 달 들어온 돈 '+won(mIn)+'</span><span class="chip">📤 이번 달 쓴 돈 '+won(mOut)+'</span></div></div>';
+  h += '<div class="section"><h2>✏️ '+(me.kid?'기록하기':'용돈 주기·기록하기')+'</h2>'+
+    '<div class="mio"><button class="'+(t.mio==='in'?'on in':'')+'" data-act="mio" data-v="in">📥 들어온 돈</button><button class="'+(t.mio==='out'?'on out':'')+'" data-act="mio" data-v="out">📤 쓴 돈</button></div>'+
+    '<div class="mcats">';
+  cats.forEach(function(c){ h += '<button class="'+(t.mcat===c?'on':'')+'" data-act="mcat" data-v="'+c+'">'+c+'</button>'; });
+  h += '</div><div class="mamtrow"><input class="inp" id="mamt" type="number" inputmode="numeric" min="0" placeholder="얼마예요?" value="'+(t.mamt||'')+'"><span>원</span></div><div class="mquick">';
+  [500,1000,2000,5000,10000].forEach(function(n){ h += '<button data-act="mplus" data-v="'+n+'">+'+n.toLocaleString('ko-KR')+'</button>'; });
+  h += '<button data-act="mplus" data-v="0">지우기</button></div>'+
+    '<input class="inp" id="mmemo" maxlength="30" placeholder="메모 (예: 편의점 젤리)" value="'+esc(t.mmemo||'')+'">'+
+    '<button class="big" style="background:'+(t.mio==='in'?'#22b573':'#ff6b6b')+'" data-act="madd">'+(t.mio==='in'?'📥 들어온 돈 적기':'📤 쓴 돈 적기')+'</button></div>';
+  h += '<div class="section"><h2>📒 기록</h2>';
+  if(!list.length) h += '<div class="empty">아직 기록이 없어요. 첫 기록을 적어 봐요!</div>';
+  var lastM = '';
+  list.slice(0, 60).forEach(function(a){
+    var m = a.ds.slice(0,7); if(m!==lastM){ lastM = m; h += '<div class="evday"><b>'+(+m.slice(5))+'월</b></div>'; }
+    var can = a.by===me.id || !me.kid;
+    h += '<div class="mitem"><span class="mdt">'+(+a.ds.slice(5,7))+'/'+(+a.ds.slice(8))+'</span><div class="mtx"><b>'+esc(a.cat)+'</b><small>'+esc(a.memo||'')+'</small></div>'+
+      '<span class="mamt '+a.io+'">'+(a.io==='in'?'+':'−')+won(a.amt)+'</span>'+(can?'<button class="bdel" data-act="mdel" data-v="'+a.id+'">✕</button>':'')+'</div>';
+  });
+  return h + '</div>';
+}
+function keepMoneyInputs(){ var a = document.getElementById('mamt'); if(!a) return; V.tmp.mamt = a.value; V.tmp.mmemo = document.getElementById('mmemo').value; }
+
 /* ---------- 처음 화면 ---------- */
 function vHome(){
   var wait = waiting().length;
   var h = '<div class="top"><h1>🏠 우리 가족 하루</h1><button class="gear" data-act="voice" aria-label="음성 안내 켜고 끄기">'+(voiceOn()?'🗣️':'🤐')+'</button><button class="gear" data-act="snd" aria-label="소리 켜고 끄기">'+(soundOn()?'🔊':'🔇')+'</button><button class="gear" data-act="refresh" aria-label="새로고침">🔄</button><button class="gear" data-act="settings" aria-label="가족 설정">⚙️</button></div>'+
-    urgentHtml(null) + '<div class="date">'+koDate()+'</div>' + stripHtml('📷 오늘의 가족 사진', 12);
+    urgentHtml(null) + '<div class="date">'+koDate()+'</div>' + upcomingHtml(null) + stripHtml('📷 오늘의 가족 사진', 12);
   var lastMe = null; try{ lastMe = mem(localStorage.getItem('fam-last')); }catch(e){}
   if(lastMe) h += '<button class="quickme" data-act="pick" data-id="'+lastMe.id+'">'+mini(lastMe)+' <b>'+esc(lastMe.name)+'</b> 화면으로 바로 가기'+(unread(lastMe.id)?' <span class="nb">💬 '+unread(lastMe.id)+'</span>':'')+' ›</button>';
   h += '<button class="whoagain" data-act="who">👋 나는 누구? 이 휴대폰 주인 고르기</button>';
@@ -761,7 +863,7 @@ function vKid(me){
     (myWait?'<span class="chip">⏳ 확인 기다리는 중 '+myWait+'개</span>':'')+'</div></div>';
 
   h = h.replace('<div class="hero"', urgentHtml(me)+'<div class="hero"');
-  h += nextHtml(me, d, open, freeNow) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) + petHtml(me.id);
+  h += nextHtml(me, d, open, freeNow) + upcomingHtml(me) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) + petHtml(me.id);
   // 부모님 답장
   var notes = S.reqs.filter(function(r){ return r.kid===me.id && r.st!=='wait' && !r.seen; }).slice(-5).reverse();
   if(notes.length){
@@ -798,6 +900,8 @@ function vKid(me){
     '<button class="tile t-rep" data-act="report"><span class="ic">🌙</span><span><div class="tt">마감 보고</div><div class="st">'+
       (d.report?(d.report.st==='ok'?'수락 완료 '+d.report.mood:d.report.st==='wait'?'확인 기다리는 중 ⏳':'다시 써요 ↩️'):'잠자기 전에 정리')+'</div></span></button>'+
     '<button class="tile t-shop" data-act="shop"><span class="ic">🛍️</span><span><div class="tt">보상 상점</div><div class="st">🪙 '+(st.coins||0)+'코인</div></span></button>'+
+    '<button class="tile t-money" data-act="money"><span class="ic">💰</span><span><div class="tt">용돈 기입장</div><div class="st">남은 돈 '+won(moneyBal(me.id))+'</div></span></button>'+
+    '<button class="tile t-cal" data-act="cal"><span class="ic">📅</span><span><div class="tt">가족 일정</div><div class="st">생일·병원·행사</div></span></button>'+
     '<button class="tile t-pet" data-act="pet"><span class="ic petic">'+pet(me.id).ic+'</span><span><div class="tt">동물 친구</div><div class="st">'+pet(me.id).nm+'</div></span></button>'+
     '<button class="tile t-urgent wide2" data-act="urgent"><span class="ic">🚨</span><span><div class="tt">긴급 공지 올리기</div><div class="st">가족 모두에게 바로 크게 알려요</div></span></button>'+
     '<button class="tile t-chat wide2" data-act="chat"><span class="ic">💬</span><span><div class="tt">가족 대화방'+(unread(me.id)?' <span class="nb">새 쪽지 '+unread(me.id)+'</span>':'')+'</div><div class="st">엄마·아빠·형제에게 쪽지 보내기</div></span></button>'+
@@ -1114,8 +1218,9 @@ function vParent(me){
   var h = backBar('home')+
     '<div class="hero"'+heroBg(me)+'><div class="row"><div class="ava">'+bigFace(me)+'</div><div><div class="nm">'+esc(me.name)+'</div>'+
     '<div class="ttl">'+esc(me.role)+' · 보고 확인 담당</div></div></div>'+
-    '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) +
+    '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + upcomingHtml(me) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) +
     '<button class="wide urgentbtn" data-act="urgent">🚨 긴급 공지 올리기</button>'+
+    '<div class="pbtns"><button class="wide" data-act="cal">📅 가족 일정</button><button class="wide" data-act="moneykids">💰 아이들 용돈</button></div>'+
     '<button class="wide chatbtn" data-act="chat">💬 가족 대화방'+(unread(me.id)?' <span class="nb">'+unread(me.id)+'</span>':'')+'</button>';
 
   h += '<div class="section"><h2>📥 확인할 보고</h2>';
@@ -1151,7 +1256,7 @@ function vKidView(me){
   h += '<div class="section"><h2>🎯 오늘의 미션</h2>';
   MISSIONS.forEach(function(m){ var ms = d.miss[m.k]||{}; h += '<div class="vrow">'+stIcon(ms.st)+' '+m.ic+' '+m.nm+(ms.note?' <span class="tm">「'+esc(ms.note)+'」</span>':'')+(ms.photo?proofImg({photo:ms.photo}, 'vphoto'):'')+(ms.st==='ok' && !(me && me.kid) ? '<button class="redo" data-act="redo" data-v="'+m.k+'">↩ 다시 하세요</button>' : '')+
     (ms.st!=='ok' && !(me && me.kid) ? '<button class="direct" data-act="direct" data-v="'+m.k+'">👍 바로 완료</button>' : '')+'</div>'; });
-  h += '</div>' + weekHtml(k.id) + '<div class="section"><h2>✏️ 숙제 목록</h2>';
+  h += '</div><button class="wide" data-act="money" data-v="'+k.id+'">💰 '+esc(k.name)+' 용돈 기입장 · 남은 돈 '+won(moneyBal(k.id))+'</button>' + weekHtml(k.id) + '<div class="section"><h2>✏️ 숙제 목록</h2>';
   if(!d.hw.length) h += '<div class="empty">적은 숙제가 없어요</div>';
   d.hw.forEach(function(x){ h += '<div class="vrow">'+(x.done?'✔️':'⬜')+' '+esc(x.t)+'</div>'; });
   h += '</div><div class="section"><h2>🚶 외출</h2>';
@@ -1428,6 +1533,37 @@ app.addEventListener('click', function(e){
       if(qi){ qi.value = v; document.querySelectorAll('.qnote button[data-id="'+b.getAttribute('data-id')+'"]').forEach(function(x){ x.classList.toggle('on', x===b); }); }
       break;
     case 'slide': slideshow(v); break;
+    case 'cal': go('cal'); break;
+    case 'moneykids': var mk1 = kids()[0]; if(mk1){ V.kid = V.kid && mem(V.kid) && mem(V.kid).kid ? V.kid : mk1.id; go('money'); } break;
+    case 'money': if(v) V.kid = v; go('money'); break;
+    case 'eic': V.tmp.eic = v; app.querySelectorAll('.evic button').forEach(function(x){ x.classList.toggle('on', x===b); }); break;
+    case 'ewho': V.tmp.ewho = v; app.querySelectorAll('.evwho button').forEach(function(x){ x.classList.toggle('on', x===b); }); break;
+    case 'eadd':
+      keepEvInputs();
+      var et = (V.tmp.etitle||'').trim(), ed = V.tmp.edate || today();
+      if(!et){ toast('무슨 일정인지 적어 주세요'); document.getElementById('etitle').focus(); break; }
+      if(!S.events) S.events = [];
+      S.events.push({id:uid(), ds:ed, tm:V.tmp.etime||'', title:et.slice(0,40), ic:V.tmp.eic||'📌', who:V.tmp.ewho||'all', by:me ? me.id : '', t:Date.now()});
+      // 지난 지 60일 넘은 일정은 정리
+      var cut = dsAdd(today(), -60); S.events = S.events.filter(function(e){ return e.ds>=cut; });
+      save(); V.tmp = {}; render(); sfx('ok');
+      toast('📅 '+evDay(ed)+' 일정을 올렸어요', {kind:'ok', say:evDay(ed)+' 일정을 올렸어요. 가족 모두에게 알렸어요.'});
+      break;
+    case 'edel': if(confirm('이 일정을 지울까요?')){ S.events = S.events.filter(function(e){ return e.id!==v; }); save(); render(); } break;
+    case 'mio': keepMoneyInputs(); V.tmp.mio = v; render(); break;
+    case 'mcat': V.tmp.mcat = v; app.querySelectorAll('.mcats button').forEach(function(x){ x.classList.toggle('on', x===b); }); break;
+    case 'mplus': var ma = document.getElementById('mamt'); if(ma){ ma.value = +v ? (+ma.value||0) + (+v) : ''; } break;
+    case 'madd':
+      keepMoneyInputs();
+      var mk = me && me.kid ? me : mem(V.kid), amt = Math.round(+V.tmp.mamt||0);
+      if(!mk) break;
+      if(!(amt>0) || amt>10000000){ toast('금액을 적어 주세요'); document.getElementById('mamt').focus(); break; }
+      if(!S.money) S.money = [];
+      S.money.push({id:uid(), kid:mk.id, ds:today(), io:V.tmp.mio||'out', amt:amt, cat:V.tmp.mcat||'', memo:(V.tmp.mmemo||'').trim().slice(0,30), by:me ? me.id : '', t:Date.now()});
+      var io = V.tmp.mio; save(); V.tmp = {mio:io}; render(); sfx(io==='in'?'coin':'tap');
+      toast((io==='in'?'📥 ':'📤 ')+won(amt)+' 적었어요 · 남은 돈 '+won(moneyBal(mk.id)), {kind:'ok', say:(io==='in'?'들어온 돈 ':'쓴 돈 ')+amt+'원을 적었어요. 남은 돈은 '+moneyBal(mk.id)+'원이에요.'});
+      break;
+    case 'mdel': if(confirm('이 기록을 지울까요?')){ S.money = S.money.filter(function(a){ return a.id!==v; }); save(); render(); } break;
     case 'redo':
       if(me && !me.kid && V.kid){
         var rm = MISSIONS.filter(function(x){ return x.k===v; })[0];
