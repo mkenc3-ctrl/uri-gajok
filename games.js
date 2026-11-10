@@ -384,7 +384,7 @@ function spot(el, h){
     el.innerHTML = '<div class="gbar"><span>'+L.ic+' '+L.nm+'</span><span id="pt">⏱️ '+L.sec+'초</span><span id="pf">0 / '+L.n+'</span></div>'+
       '<div class="mprog"><i id="ppb"></i></div><div class="spotwrap"><canvas id="ca" width="'+W+'" height="'+H+'"></canvas>'+
       '<div class="spotmid">⬆️ 원래 사진 · 바뀐 사진 ⬇️</div><canvas id="cb" width="'+W+'" height="'+H+'"></canvas></div>'+
-      '<div class="qmsg" id="pm">다른 곳을 찾아 눌러요 🔍</div><button class="big ghost" id="phint">💡 힌트 (−50점)</button>';
+      '<div class="spotbot"><div class="qmsg" id="pm">다른 곳을 찾아 눌러요 🔍</div><button class="big ghost" id="phint">💡 힌트<br><small>−50점</small></button></div>';
     var ca = el.querySelector('#ca'), cb = el.querySelector('#cb'), xa = ca.getContext('2d'), xb = cb.getContext('2d');
     xa.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
     xb.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);

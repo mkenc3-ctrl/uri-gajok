@@ -435,7 +435,7 @@ button:disabled{opacity:.4}
 .sset button.on{background:#ffd84d;box-shadow:0 3px 0 #d9b21f}
 .lyt{display:block;margin:4px 0 6px;font-size:16px;color:#c92a2a;text-decoration:none}
 .spotwrap{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.spotwrap canvas{width:100%;height:auto;border-radius:14px;box-shadow:0 3px 0 #eadfc6;touch-action:manipulation;background:#f4ecdc}
+.spotwrap canvas{display:block;margin:0 auto;width:auto;height:auto;max-width:100%;max-height:calc((100dvh - 250px) / 2);border-radius:14px;box-shadow:0 3px 0 #eadfc6;touch-action:manipulation;background:#f4ecdc}
 .spotmid{text-align:center;font-size:15px;color:var(--sub)}
 .lvls.four{grid-template-columns:1fr 1fr}
 .srd{font-size:17px;color:var(--sub);margin-top:4px}
@@ -656,3 +656,9 @@ body.hasnav #nav{display:flex}
 .rtip{text-align:center;color:var(--sub);font-size:14px;margin-top:12px}
 .rtitle{flex:1;display:flex;align-items:center;gap:6px;justify-content:center;font-size:19px;margin-right:60px}
 button.nrow{display:block;width:100%;text-align:left;background:transparent;padding:6px 0;font-size:inherit}
+/* 틀린 그림: 한 화면에 */
+.spotwrap{gap:4px;margin-top:4px}
+.spotmid{font-size:13px;line-height:1.2}
+.spotbot{display:flex;gap:8px;align-items:stretch;margin-top:6px}
+.spotbot .qmsg{flex:1;margin:0;display:flex;align-items:center;justify-content:center}
+.spotbot #phint{flex:0 0 auto;width:auto;margin:0;padding:6px 14px;line-height:1.2}
