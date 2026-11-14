@@ -99,24 +99,27 @@ var WORDS = [['🍎','apple','사과'],['🐶','dog','개'],['🐱','cat','고�
   ['🍞','bread','빵'],['🥚','egg','달걀'],['⚽','ball','공'],['🚌','bus','버스'],['✈️','airplane','비행기'],['🚲','bike','자전거'],['⏰','clock','시계'],['🪑','chair','의자'],['🛏️','bed','침대'],['🚪','door','문'],
   ['👟','shoes','신발'],['🧢','cap','모자'],['🍦','ice cream','아이스크림'],['🍰','cake','케이크'],['🐻','bear','곰'],['🐰','rabbit','토끼'],['🐸','frog','개구리'],['🐢','turtle','거북'],['🌈','rainbow','무지개'],['☔','umbrella','우산'],
   ['🍓','strawberry','딸기'],['🍉','watermelon','수박'],['🐷','pig','돼지'],['🐮','cow','소'],['🐴','horse','말'],['🦆','duck','오리'],['🍕','pizza','피자'],['🐝','bee','벌'],['🦋','butterfly','나비'],['🔑','key','열쇠']];
-function eng(el, h){
-  var score = 0, left = 60, combo = 0, ans, pool = shuffle(WORDS.slice()), qi = 0;
-  el.innerHTML = '<div class="gbar"><span>🔤 영어 단어</span><span id="qs">0개</span><span id="qt">60초</span></div>'+
+var WORDS2 = [['🦒','giraffe','기린'],['🐘','elephant','코끼리'],['🦋','butterfly','나비'],['🐢','turtle','거북'],['🦁','lion','사자'],['🐧','penguin','펭귄'],['🦓','zebra','얼룩말'],['🐊','crocodile','악어'],['🦉','owl','부엉이'],['🐬','dolphin','돌고래'],['🐙','octopus','문어'],['🦀','crab','게'],['🐌','snail','달팽이'],['🦔','hedgehog','고슴도치'],['🐿️','squirrel','다람쥐'],['🦘','kangaroo','캥거루'],['🦩','flamingo','플라밍고'],['🦈','shark','상어'],['🍓','strawberry','딸기'],['🍉','watermelon','수박'],['🍍','pineapple','파인애플'],['🥕','carrot','당근'],['🥦','broccoli','브로콜리'],['🍄','mushroom','버섯'],['🌽','corn','옥수수'],['🍑','peach','복숭아'],['🍇','grape','포도'],['🥒','cucumber','오이'],['🧅','onion','양파'],['🥔','potato','감자'],['🚁','helicopter','헬리콥터'],['🚀','rocket','로켓'],['🚒','fire truck','소방차'],['🚑','ambulance','구급차'],['🚲','bicycle','자전거'],['🚂','train','기차'],['⛵','sailboat','돛단배'],['🚜','tractor','트랙터'],['☂️','umbrella','우산'],['🔭','telescope','망원경'],['🎹','piano','피아노'],['🥁','drum','북'],['🎻','violin','바이올린'],['🪜','ladder','사다리'],['🧲','magnet','자석'],['🕯️','candle','양초'],['⏰','alarm clock','자명종'],['🧸','teddy bear','곰 인형'],['🎈','balloon','풍선'],['📚','library','도서관'],['🌈','rainbow','무지개'],['⚡','lightning','번개'],['🌋','volcano','화산'],['🏔️','mountain','산'],['🏝️','island','섬'],['❄️','snowflake','눈송이'],['🌪️','tornado','회오리바람'],['🌊','wave','파도'],['🧑‍🚒','firefighter','소방관'],['👩‍⚕️','doctor','의사'],['👨‍🍳','chef','요리사'],['👮','police officer','경찰관'],['🧑‍🏫','teacher','선생님'],['🧑‍🚀','astronaut','우주비행사'],['🏥','hospital','병원'],['🏫','school','학교'],['🦷','tooth','이'],['👂','ear','귀']];
+function eng2(el, h){ eng(el, h, true); }
+function eng(el, h, hard){
+  var LIST = hard ? WORDS2 : WORDS, KEY = hard ? 'eng2' : 'eng';
+  var score = 0, left = 60, combo = 0, ans, pool = shuffle(LIST.slice()), qi = 0;
+  el.innerHTML = '<div class="gbar"><span>'+(hard?'🎓 어려운 영어':'🔤 영어 단어')+'</span><span id="qs">0개</span><span id="qt">60초</span></div>'+
     '<div class="qbox"><div class="qq" id="qq" style="font-size:84px;line-height:1.1"></div><div class="tm" id="qko"></div><div class="qc eng" id="qc"></div><div class="qmsg" id="qmsg">&nbsp;</div></div>';
   function speak(w){ try{ var u = new SpeechSynthesisUtterance(w); u.lang = 'en-US'; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
   function next(){
-    if(qi>=pool.length){ pool = shuffle(WORDS.slice()); qi = 0; }
+    if(qi>=pool.length){ pool = shuffle(LIST.slice()); qi = 0; }
     var w = pool[qi++]; ans = w[1];
-    var opts = [w[1]]; while(opts.length<4){ var o = WORDS[Math.floor(Math.random()*WORDS.length)][1]; if(opts.indexOf(o)<0) opts.push(o); }
+    var opts = [w[1]]; while(opts.length<4){ var o = LIST[Math.floor(Math.random()*LIST.length)][1]; if(opts.indexOf(o)<0) opts.push(o); }
     el.querySelector('#qq').textContent = w[0];
-    el.querySelector('#qko').textContent = score>=10 ? '' : '('+w[2]+')';
+    el.querySelector('#qko').textContent = (hard || score>=10) ? '' : '('+w[2]+')';
     var c = el.querySelector('#qc'); c.innerHTML = '';
     shuffle(opts).forEach(function(o){
       var btn = document.createElement('button'); btn.textContent = o;
       btn.onclick = function(){
         var m = el.querySelector('#qmsg');
         if(o===ans){ h.sfx('ok'); speak(ans); score++; combo++; m.textContent = combo>=3 ? '🔥 '+combo+'연속 정답!' : '⭕ 정답! '+ans; if(combo%5===0) h.confetti(10); }
-        else { h.sfx('no'); combo = 0; m.textContent = '❌ 정답은 '+ans; speak(ans); }
+        else { h.sfx('no'); combo = 0; m.textContent = '❌ 정답은 '+ans+(hard?' ('+w[2]+')':''); speak(ans); }
         el.querySelector('#qs').textContent = score+'개';
         next();
       };
@@ -126,7 +129,7 @@ function eng(el, h){
   next();
   every(function(){
     left--; el.querySelector('#qt').textContent = left+'초';
-    if(left<=0){ stopAll(); h.done('eng', score, true, '🔤 영어 단어 '+score+'개 맞혔어요!'); }
+    if(left<=0){ stopAll(); h.done(KEY, score, true, (hard?'🎓 어려운 영어 단어 ':'🔤 영어 단어 ')+score+'개 맞혔어요!'); }
   }, 1000);
 }
 
@@ -873,10 +876,11 @@ window.Games = {
     {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 4단계', unit:'점', high:true},
     {k:'song',   ic:'🎤', nm:'노래 번역 퀴즈', how:'인기 팝송 · 귀멸의 칼날 일본어 · 전체 듣기',       unit:'점', high:true},
     {k:'eng',    ic:'🔤', nm:'그림 보고 영어 단어', how:'60초 동안 영어 단어 맞히기 · 소리도 나와요', unit:'개', high:true},
+    {k:'eng2',   ic:'🎓', nm:'어려운 영어 단어', how:'동물·과일·직업·자연 66개 · 한글 힌트 없이 도전!', unit:'개', high:true},
     {k:'gugu',   ic:'✖️', nm:'구구단 퀴즈',         how:'60초 동안 몇 개 맞힐까?',               unit:'개', high:true}
   ],
   start: function(name, el, h){ stopAll(); if(!h.sfx) h.sfx = function(){};
-    ({run:runner, mole:mole, pmatch:memory, spot:spot, song:song, gugu:gugu, eng:eng})[name](el, h); },
+    ({run:runner, mole:mole, pmatch:memory, spot:spot, song:song, gugu:gugu, eng:eng, eng2:eng2})[name](el, h); },
   stop: stopAll
 };
 })();
