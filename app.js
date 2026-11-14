@@ -683,11 +683,14 @@ function heroBg(mb, col){
   var c = col || mb.color || '#ff9a2e';
   return ' style="background:linear-gradient(120deg,'+c+'f2 0%,'+c+'c0 45%,'+c+'40 100%),url('+photoSrc(list[0].f)+') center 30%/cover"';
 }
+function upBtnHtml(){
+  return '<label class="upbig">📷 가족 사진 올리기<small>사진첩에서 고르거나 바로 찍어요 · 여러 장 한꺼번에</small><input type="file" class="photoup" accept="image/*" multiple hidden></label>';
+}
 function stripHtml(title, n){
-  var list = dayPhotos('strip'); if(!list.length) return '';
+  var list = dayPhotos('strip'); if(!list.length) return upBtnHtml();
   var h = '<div class="pstrip"><div class="pshd"><b>'+(title||'📷 우리 가족 사진')+'</b><button data-act="slide" data-v="0">📺 크게 보기</button></div><div class="psrow">';
   list.slice(0, n||12).forEach(function(p, i){ h += '<button class="psimg" data-act="slide" data-v="'+i+'"><img src="'+photoSrc(p.f)+'" alt="'+esc(p.cap)+'" loading="lazy"></button>'; });
-  return h + '</div></div>';
+  return h + '</div></div>' + upBtnHtml();
 }
 /* 사진 크게 보기: 자동으로 넘어가는 슬라이드쇼 */
 var slideT = null;
@@ -2134,6 +2137,8 @@ async function uploadLocalPhotos(){
 }
 async function uploadPicked(files){
   var n = 0;
+  if(!(Cloud.on && Cloud.user)){ toast('☁️ 가족 계정으로 로그인해야 사진을 올릴 수 있어요', {kind:'no'}); return; }
+  toast('📷 사진 '+files.length+'장 올리는 중… 잠깐만요', {say:false});
   for(var i=0;i<files.length;i++){
     try{
       var url = URL.createObjectURL(files[i]), blob = await resizeToBlob(url); URL.revokeObjectURL(url);
@@ -2178,7 +2183,7 @@ app.addEventListener('keydown', function(e){
   if(e.key==='Enter' && e.target.id==='cin' && !e.isComposing && e.keyCode!==229){ e.preventDefault(); var me = V.id ? mem(V.id) : null; if(me) cSend(me, e.target.value); }
 });
 document.getElementById('proofin').addEventListener('change', function(e){ if(e.target.files.length) proofPicked(e.target.files[0]); else proofPending = null; });
-app.addEventListener('change', function(e){ if(e.target.id==='photofile' && e.target.files.length) uploadPicked(e.target.files); });
+app.addEventListener('change', function(e){ if((e.target.id==='photofile' || e.target.classList.contains('photoup')) && e.target.files.length) uploadPicked(e.target.files); });
 boot();
 document.addEventListener('visibilitychange', function(){ if(!document.hidden && ['home','me','free','kid'].indexOf(V.screen)>=0) render(); });
 })();
