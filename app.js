@@ -232,6 +232,7 @@ async function cloudStart(){
   synced = true;
   if(!rows.length) await pushNow();               // 서버가 비어 있으면 이 기기 기록으로 시작
   Cloud.listen(onRemote);
+  pushSync(false);
   await loadCloudPhotos();
 }
 async function loadCloudPhotos(){
@@ -475,8 +476,27 @@ function sysNotify(title, body){
 async function askNotify(){
   if(!window.Notification){ toast('📵 이 휴대폰(브라우저)은 알림을 지원하지 않아요. 홈 화면에 설치한 앱에서 다시 눌러 주세요'); return; }
   var p = await Notification.requestPermission();
-  toast(p==='granted' ? '📢 휴대폰 알림을 켰어요! 앱이 뒤에 있어도 알려 줄게요' : '🔕 알림이 허용되지 않았어요. 휴대폰 설정에서 허용할 수 있어요');
+  toast(p==='granted' ? '📢 휴대폰 알림을 켰어요! 앱이 꺼져 있어도 긴급 공지가 와요' : '🔕 알림이 허용되지 않았어요. 휴대폰 설정에서 허용할 수 있어요');
+  if(p==='granted') pushSync(true);
   render();
+}
+/* 앱이 꺼져 있어도 오는 알림(웹 푸시): 이 휴대폰을 서버에 등록 */
+function b64u(s){ var p = '='.repeat((4 - s.length % 4) % 4), raw = atob((s + p).replace(/-/g,'+').replace(/_/g,'/')), a = new Uint8Array(raw.length); for(var i=0;i<raw.length;i++) a[i] = raw.charCodeAt(i); return a; }
+async function pushSync(loud){
+  try{
+    var key = (window.FAMILY_CONFIG||{}).pushKey;
+    if(!key || !window.Cloud || !Cloud.on || !Cloud.user || !window.Notification || Notification.permission!=='granted' || !('PushManager' in window)) return;
+    var reg = swReg || await navigator.serviceWorker.ready;
+    var sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(key)});
+    var owner = ''; try{ owner = localStorage.getItem('fam-owner') || ''; }catch(e){}
+    await Cloud.savePush(sub, owner);
+    if(loud) toast('🔔 이 휴대폰에 긴급 공지 알림이 와요', {kind:'ok'});
+  }catch(e){ if(loud) toast('🔕 알림 등록이 안 됐어요. 아이폰은 홈 화면에 설치한 앱에서 켜 주세요'); }
+}
+function pushUrgent(me, text){
+  if(!window.Cloud || !Cloud.on || !Cloud.user || !(window.FAMILY_CONFIG||{}).pushKey) return;
+  Cloud.notify({title:'🚨 긴급 공지 — '+me.name, body:text, from:me.id}).catch(function(){ toast('📵 휴대폰 알림은 못 보냈어요 (앱 안에서는 보여요)'); });
 }
 function confetti(n){
   var fx = document.getElementById('fx'), items = ['⭐','🌟','✨','🎉','💛','🍬','🎈'];
@@ -1009,7 +1029,7 @@ function vKid(me){
   h += '</div></div>' + memoryHtml() + logHtml(me.id) + pinBtn(me) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
 }
-function pinBtn(me){ return '<button class="ownerbtn" data-act="mypin">🔑 내 비밀번호 바꾸기</button>'; }
+function pinBtn(me){ var np = window.Notification ? Notification.permission : 'none'; return (np==='default' ? '<button class="ownerbtn" data-act="notify">🔔 긴급 공지 알림 받기 <small>(앱이 꺼져 있어도 휴대폰에 알려 줘요)</small></button>' : '') + '<button class="ownerbtn" data-act="mypin">🔑 내 비밀번호 바꾸기</button>'; }
 function isOwner(me){ try{ return !!me && localStorage.getItem('fam-owner')===me.id; }catch(e){ return false; } }
 function nextHtml(me, d, open, freeNow){
   var nx = MISSIONS.filter(function(m){ var st = (d.miss[m.k]||{}).st; return st!=='ok' && st!=='wait'; })[0];
@@ -1434,6 +1454,7 @@ function cSend(me, text, stk){
   S.msgs.push(g);
   if(S.msgs.length > 300) S.msgs = S.msgs.slice(-300);
   save(); sfx('pop'); render();
+  if(g.urgent) pushUrgent(me, g.text);
   if(g.urgent) toast('🚨 가족 모두에게 긴급 공지를 올렸어요', {kind:'no', say:'긴급 공지를 올렸어요. 가족 모두에게 알렸어요.'});
   else toast('📨 '+(g.to==='all' ? '가족 모두' : (mem(g.to)||{}).name)+'에게 쪽지를 보냈어요', {kind:'msg', say: g.stk ? '스티커를 보냈어요' : '쪽지를 보냈어요'});
 }
@@ -1560,7 +1581,7 @@ function vSettings(){
   var np = window.Notification ? Notification.permission : 'none';
   h += '<label class="lb">📢 알림·음성 안내</label><div class="cloudbox">'+
     '🗣️ 음성 안내: <b>'+(voiceOn()?'켜짐':'꺼짐')+'</b> <button class="mbtn" data-act="voice">'+(voiceOn()?'끄기':'켜기')+'</button><br>'+
-    '📢 휴대폰 알림: <b>'+(np==='granted'?'켜짐':np==='denied'?'막힘 (휴대폰 설정에서 허용)':np==='none'?'지원 안 함':'꺼짐')+'</b> '+(np==='default'?'<button class="mbtn" data-act="notify">켜기</button>':'')+
+    '📢 휴대폰 알림: <b>'+(np==='granted'?'켜짐':np==='denied'?'막힘 (휴대폰 설정에서 허용)':np==='none'?'지원 안 함':'꺼짐')+'</b> '+(np==='default'?'<button class="mbtn" data-act="notify">켜기</button>':np==='granted'?'<button class="mbtn ghost" data-act="notify">이 휴대폰 다시 등록</button>':'')+
     '<br><small>앱이 열려 있으면 화면 위 알림창과 목소리로, 뒤에 있으면 휴대폰 알림으로 알려 줘요.</small></div>';
   h += '<label class="lb">☁️ 가족 서버</label>' + cloudSettingsHtml();
   var rws = V.tmp.rw || (V.tmp.rw = JSON.parse(JSON.stringify(S.rewards)));
@@ -1606,7 +1627,7 @@ app.addEventListener('click', function(e){
     case 'owner':
       if(!me) break;
       var cur = null; try{ cur = localStorage.getItem('fam-owner'); }catch(e){}
-      try{ if(cur===me.id) localStorage.removeItem('fam-owner'); else localStorage.setItem('fam-owner', me.id); }catch(e){}
+      try{ if(cur===me.id) localStorage.removeItem('fam-owner'); else localStorage.setItem('fam-owner', me.id); }catch(e){} pushSync(false);
       toast(cur===me.id ? '📱 이제 앱을 켜면 처음 화면이 나와요' : '📱 이제 앱을 켜면 바로 '+me.name+' 화면이 열려요', {kind:'ok'});
       render(); break;
     case 'settings':

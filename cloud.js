@@ -65,6 +65,17 @@ var Cloud = {
     if(r.error) throw r.error;
     return r.data.signedUrl;
   },
+  /* 휴대폰 알림(웹 푸시): 이 휴대폰 알림 주소 저장 · 가족에게 알림 보내기 */
+  savePush: async function(sub, member){
+    var j = sub.toJSON ? sub.toJSON() : sub;
+    var r = await sb.from('family_push').upsert({endpoint:j.endpoint, sub:j, member:member||'', updated_at:new Date().toISOString()});
+    if(r.error) throw r.error;
+  },
+  notify: async function(payload){
+    var r = await sb.functions.invoke('fam-push', {body: payload});
+    if(r.error) throw r.error;
+    return r.data;
+  },
   removePhoto: async function(name){
     var r = await sb.storage.from(BUCKET).remove([name]);
     if(r.error) throw r.error;
