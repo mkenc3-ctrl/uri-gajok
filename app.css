@@ -698,3 +698,22 @@ button.xcard{cursor:pointer}
 .upbig{display:block;width:100%;margin:8px 0 12px;padding:14px 12px;border-radius:18px;background:#ff8a3d;color:#fff;font-size:21px;font-weight:800;text-align:center;box-shadow:0 4px 0 #c9601d;cursor:pointer}
 .upbig small{display:block;font-size:14px;font-weight:500;opacity:.92;margin-top:3px}
 .upbig:active{transform:translateY(2px);box-shadow:0 2px 0 #c9601d}
+/* 틀린 그림 찾기 — 표시·나란히 보기 */
+.spc{position:relative;margin:0 auto;width:fit-content;max-width:100%}
+.spc canvas{margin:0!important}
+.spo{position:absolute;inset:0;pointer-events:none}
+.spo i{position:absolute;border-radius:50%;box-sizing:border-box}
+.spo .spr{border:5px solid #ff3b5c;box-shadow:0 0 0 2px #fff;animation:sppop .35s ease-out}
+.spo .spm{border:5px dashed #2f9e44;box-shadow:0 0 0 2px #fff;animation:sppop .35s ease-out}
+.spo .sph{border:4px solid #ffd84d;background:rgba(255,216,77,.18);animation:spblink .6s ease-in-out infinite alternate}
+.spo .spx{display:flex}.spo .spx:before{content:"✕";margin:auto;color:#ff3b5c;font:900 28px/1 sans-serif;text-shadow:0 0 3px #fff,0 0 3px #fff;animation:sppop .25s}
+.sptag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:2px 8px;border-radius:99px;pointer-events:none}
+#pt.low{color:#e03131;font-weight:bold}
+@keyframes sppop{from{transform:scale(1.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes spblink{from{opacity:.35}to{opacity:1}}
+@media (orientation:landscape) and (min-width:700px){
+  .spotwrap{flex-direction:row;align-items:flex-start;justify-content:center}
+  .spotwrap .spc{flex:0 1 49%;width:auto}
+  .spotwrap canvas{width:100%!important;height:auto!important;max-height:none!important}
+  .spotmid{display:none}
+}

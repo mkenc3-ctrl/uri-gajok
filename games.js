@@ -393,16 +393,17 @@ function song(el, h){
 
 /* ④ 가족 사진 틀린 그림 찾기 — 아래 사진에서 바뀐 곳을 찾아 눌러요 */
 var SPOT_LV = [
-  // kinds: stk 그림 붙이기(잘 보임) · tint 색 바꾸기 · flip 좌우 뒤집기 · copy 다른 조각 덮기(잘 안 보임)
-  {ic:'🐣', nm:'쉬움',      n:3, r:0.12,  sec:90,  kinds:['stk'],                       tint:0.35, sub:'큰 그림 3개 · 90초'},
-  {ic:'🐥', nm:'보통',      n:5, r:0.09,  sec:100, kinds:['stk','tint','stk','flip'],   tint:0.25, sub:'5군데 · 100초'},
-  {ic:'🦅', nm:'어려움',    n:7, r:0.07,  sec:110, kinds:['tint','flip','copy','stk'],  tint:0.15, sub:'작게 7군데 · 110초'},
-  {ic:'🐉', nm:'아주 어려움', n:9, r:0.055, sec:120, kinds:['flip','copy','tint'],       tint:0.08, sub:'은근하게 9군데 · 120초'}
+  // kinds: stk 그림 붙이기 · color 색 바꾸기 · erase 지우기 · grow 크게 · shift 옮기기 · flip 뒤집기 · bright 밝기 · copy 다른 조각
+  // need: 바뀐 정도(0~255) 이 밑이면 다른 방법으로 다시 바꿈 — 너무 안 보이는 곳 막기
+  {ic:'🐣', nm:'쉬움',      n:3, r:0.12,  sec:90,  kinds:['stk','color','stk','erase'],               amt:1.0,  need:38, sub:'큰 그림 3개 · 90초'},
+  {ic:'🐥', nm:'보통',      n:5, r:0.09,  sec:100, kinds:['stk','color','erase','grow','flip'],        amt:0.8,  need:28, sub:'5군데 · 100초'},
+  {ic:'🦅', nm:'어려움',    n:7, r:0.07,  sec:110, kinds:['color','erase','grow','shift','flip','bright'], amt:0.6, need:20, sub:'작게 7군데 · 110초'},
+  {ic:'🐉', nm:'아주 어려움', n:9, r:0.055, sec:120, kinds:['color','erase','grow','shift','bright','copy'],  amt:0.45, need:14, sub:'은근하게 9군데 · 120초'}
 ];
 function spot(el, h){
   var best = h.best('spot');
   el.innerHTML = '<div class="gintro"><div class="gbig">🔎</div><h2>가족 사진 틀린 그림 찾기</h2>'+
-    '<p>위아래 두 사진에서 <b>다른 곳</b>을 찾아 눌러요!<br><small>빨리 찾을수록 점수가 높아요 · 막히면 💡 힌트</small></p>'+
+    '<p>두 사진에서 <b>다른 곳</b>을 찾아 눌러요!<br><small>색이 바뀌거나, 없어지거나, 커지거나, 옮겨진 곳이 있어요<br>빨리 찾을수록 점수가 높아요 · 막히면 💡 힌트</small></p>'+
     '<div class="lvls four">'+SPOT_LV.map(function(L, i){ return '<button class="lvl" data-i="'+i+'"><span>'+L.ic+'</span><b>'+L.nm+'</b><small>'+L.sub+'</small></button>'; }).join('')+'</div>'+
     (best!=null ? '<div class="ghint">내 최고 점수: <b>'+best+'점</b></div>' : '')+'</div>';
   el.querySelectorAll('.lvl').forEach(function(b){ b.onclick = function(){ h.sfx('tap'); load(SPOT_LV[+b.dataset.i]); }; });
@@ -411,69 +412,171 @@ function spot(el, h){
     var list = shuffle((h.photos||[]).slice());
     if(!list.length){ el.innerHTML = '<div class="gintro"><p>사진이 아직 없어요 😢</p></div>'; return; }
     el.innerHTML = '<div class="gintro"><p>사진 고르는 중…</p></div>';
-    var p = list[0], img = new Image();
-    img.onload = function(){ play(L, img, p); };
-    img.onerror = function(){ list.shift(); if(list.length){ p = list[0]; img.src = h.photoSrc(p.f); } else el.innerHTML = '<div class="gintro"><p>사진을 못 불러왔어요 😢</p></div>'; };
-    img.src = h.photoSrc(p.f);
+    function one(i, cors){
+      if(i >= list.length){ el.innerHTML = "<div class=\"gintro\"><p>사진을 못 불러왔어요 😢</p></div>"; return; }
+      var img = new Image(); if(cors) img.crossOrigin = "anonymous";
+      img.onload = function(){ play(L, img, list[i]); };
+      img.onerror = function(){ if(cors) one(i, false); else one(i+1, true); };
+      img.src = h.photoSrc(list[i].f);
+    }
+    one(0, true);
   }
 
   function play(L, img, p){
-    var W = 600, H = Math.round(W * Math.min(0.85, Math.max(0.6, img.height/img.width)));
-    // 사진 가운데를 잘라 W×H에 맞춤
+    var W = 800, H = Math.round(W * Math.min(0.85, Math.max(0.6, img.height/img.width)));
     var sr = Math.max(W/img.width, H/img.height), sw = W/sr, sh = H/sr, sx = (img.width-sw)/2, sy = (img.height-sh)/2;
     el.innerHTML = '<div class="gbar"><span>'+L.ic+' '+L.nm+'</span><span id="pt">⏱️ '+L.sec+'초</span><span id="pf">0 / '+L.n+'</span></div>'+
-      '<div class="mprog"><i id="ppb"></i></div><div class="spotwrap"><canvas id="ca" width="'+W+'" height="'+H+'"></canvas>'+
-      '<div class="spotmid">⬆️ 원래 사진 · 바뀐 사진 ⬇️</div><canvas id="cb" width="'+W+'" height="'+H+'"></canvas></div>'+
+      '<div class="mprog"><i id="ppb"></i></div><div class="spotwrap">'+
+      '<div class="spc"><canvas id="ca" width="'+W+'" height="'+H+'"></canvas><div class="spo" id="oa"></div><b class="sptag">원래</b></div>'+
+      '<div class="spotmid">⬆️ 원래 사진 · 바뀐 사진 ⬇️</div>'+
+      '<div class="spc"><canvas id="cb" width="'+W+'" height="'+H+'"></canvas><div class="spo" id="ob"></div><b class="sptag">바뀐 곳 찾기</b></div></div>'+
       '<div class="spotbot"><div class="qmsg" id="pm">다른 곳을 찾아 눌러요 🔍</div><button class="big ghost" id="phint">💡 힌트<br><small>−50점</small></button></div>';
     var ca = el.querySelector('#ca'), cb = el.querySelector('#cb'), xa = ca.getContext('2d'), xb = cb.getContext('2d');
+    xa.imageSmoothingQuality = 'high'; xb.imageSmoothingQuality = 'high';
     xa.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
     xb.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
-    // 바꿀 곳 고르기 (서로 겹치지 않게, 가장자리 빼고)
-    var R = Math.round(W * L.r), diffs = [], tries = 0;
-    while(diffs.length < L.n && tries < 500){
-      tries++;
-      var d = {x: R + Math.random()*(W-2*R), y: R + Math.random()*(H-2*R)};
-      if(diffs.every(function(o){ return Math.hypot(o.x-d.x, o.y-d.y) > R*2.3; })) diffs.push(d);
+    var R = Math.round(W * L.r), S = R*2;
+
+    // ── 사진에서 무늬가 많은 곳(눈에 띄는 곳) 찾기 ──
+    var px = null; try { px = xa.getImageData(0, 0, W, H).data; } catch(e){ px = null; }
+    function gray(x, y){ var i = (Math.min(H-1, Math.max(0, y|0))*W + Math.min(W-1, Math.max(0, x|0)))*4; return px[i]*0.3 + px[i+1]*0.59 + px[i+2]*0.11; }
+    function detail(cx, cy, rr){
+      if(!px) return 1;
+      var e = 0, n = 0, st = Math.max(3, Math.round(rr/6));
+      for(var y = cy-rr; y < cy+rr; y += st) for(var x = cx-rr; x < cx+rr; x += st){
+        if((x-cx)*(x-cx)+(y-cy)*(y-cy) > rr*rr) continue;
+        e += Math.abs(gray(x+st, y)-gray(x, y)) + Math.abs(gray(x, y+st)-gray(x, y)); n++;
+      }
+      return n ? e/n : 0;
     }
-    var STK = ['⭐','🎈','🌸','🍎','🦋','🍀','🐞','🎀','🍩','🐥'], kinds = [];
+    // 얼굴·손(살색)이 많은 곳은 바꾸지 않음 — 가족 얼굴이 지워지거나 번져 보이지 않게
+    function skin(cx, cy, rr){
+      if(!px) return 0;
+      var s1 = 0, n = 0, st = Math.max(3, Math.round(rr/7));
+      for(var y = cy-rr*1.3; y < cy+rr*1.3; y += st) for(var x = cx-rr*1.3; x < cx+rr*1.3; x += st){
+        var i = (Math.min(H-1, Math.max(0, y|0))*W + Math.min(W-1, Math.max(0, x|0)))*4, r = px[i], gg = px[i+1], b = px[i+2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+        if(r > 95 && gg > 40 && b > 20 && r > gg && r > b && r-gg > 15 && mx-mn > 15 && r-b < 140) s1++; n++;
+      }
+      return n ? s1/n : 0;
+    }
+    var cand = [];
+    for(var t = 0; t < 260; t++){ var c = {x: R*1.1 + Math.random()*(W-2.2*R), y: R*1.1 + Math.random()*(H-2.2*R)}; c.e = detail(c.x, c.y, R); if(skin(c.x, c.y, R) < 0.18) cand.push(c); }
+    if(cand.length < L.n*3) for(var t3 = 0; t3 < 200; t3++){ var c3 = {x: R*1.1 + Math.random()*(W-2.2*R), y: R*1.1 + Math.random()*(H-2.2*R)}; c3.e = detail(c3.x, c3.y, R) * (1 - skin(c3.x, c3.y, R)); cand.push(c3); }
+    cand.sort(function(a, b){ return b.e - a.e; });
+    var diffs = [];
+    function far(d, gap){ return diffs.every(function(o){ return Math.hypot(o.x-d.x, o.y-d.y) > R*gap; }); }
+    // 무늬 많은 곳 위주로, 그래도 사진 여기저기 흩어지게
+    [2.6, 2.3].forEach(function(gap){ for(var i = 0; i < cand.length && diffs.length < L.n; i++){ if(i < cand.length*0.6 && far(cand[i], gap)) diffs.push(cand[i]); } });
+    for(var i2 = 0; i2 < cand.length && diffs.length < L.n; i2++) if(far(cand[i2], 2.1)) diffs.push(cand[i2]);
+
+    // ── 바꾸기 ──
+    var canF = (function(){ try{ var t = document.createElement('canvas').getContext('2d'); t.filter = 'blur(1px)'; return t.filter === 'blur(1px)'; }catch(e){ return false; } })();
+    var STK = ['⭐','🎈','🌸','🍎','🦋','🍀','🐞','🎀','🍩','🐥','🍓','🌻','🧁','🐠'];
+    function patch(fn, feather){
+      var pc = document.createElement('canvas'); pc.width = S; pc.height = S; var g = pc.getContext('2d');
+      fn(g);
+      g.globalCompositeOperation = 'destination-in';
+      var gr = g.createRadialGradient(R, R, R*(feather ? 0.55 : 0.95), R, R, R);
+      gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, S, S);
+      return pc;
+    }
+    function src(g, x, y, w, hh){ g.drawImage(ca, x, y, w || S, hh || S, 0, 0, S, S); }
+    function apply(d, k, i){
+      var x0 = d.x-R, y0 = d.y-R, a = L.amt, pc;
+      if(k === 'stk'){
+        xb.save(); xb.font = Math.round(R*1.25)+'px sans-serif'; xb.textAlign = 'center'; xb.textBaseline = 'middle';
+        xb.shadowColor = 'rgba(0,0,0,.35)'; xb.shadowBlur = R*0.15; xb.shadowOffsetY = R*0.06;
+        xb.fillText(STK[Math.floor(Math.random()*STK.length)], d.x, d.y); xb.restore(); return;
+      }
+      if(k === 'color'){
+        pc = patch(function(g){
+          if(canF){ g.filter = 'hue-rotate('+Math.round(90 + 90*a + Math.random()*40)+'deg) saturate('+(1.2+0.6*a)+')'; src(g, x0, y0); g.filter = 'none'; }
+          else { src(g, x0, y0); g.globalCompositeOperation = 'hue'; g.fillStyle = ['#ff0040','#00c853','#2962ff','#ffab00'][i%4]; g.fillRect(0, 0, S, S); }
+        }, true);
+      } else if(k === 'bright'){
+        var up = Math.random() < 0.5;
+        pc = patch(function(g){
+          if(canF){ g.filter = 'brightness('+(up ? 1.22 + 0.3*a : 0.78 - 0.22*a)+')'; src(g, x0, y0); g.filter = 'none'; }
+          else { src(g, x0, y0); g.fillStyle = up ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.4)'; g.fillRect(0, 0, S, S); }
+        }, true);
+      } else if(k === 'erase'){
+        // 옆의 밋밋한 곳으로 덮어 「없어진 것처럼」
+        var nb = [[-S,0],[S,0],[0,-S],[0,S],[-S,-S],[S,S],[-S,S],[S,-S]].map(function(o){ return {x: d.x+o[0], y: d.y+o[1]}; })
+          .filter(function(o){ return o.x-R >= 0 && o.y-R >= 0 && o.x+R <= W && o.y+R <= H && skin(o.x, o.y, R*0.8) < 0.12; });
+        nb.forEach(function(o){ o.e = detail(o.x, o.y, R); }); nb.sort(function(p1, p2){ return p1.e - p2.e; });
+        var b = nb[0] || {x: d.x, y: d.y < H/2 ? d.y+S : d.y-S};
+        pc = patch(function(g){ src(g, b.x-R, b.y-R); }, true);
+      } else if(k === 'grow'){
+        var z = 1.2 + 0.25*a, q = S/z;
+        pc = patch(function(g){ src(g, d.x-q/2, d.y-q/2, q, q); }, true);
+      } else if(k === 'shift'){
+        var an = Math.random()*Math.PI*2, m = R*(0.3 + 0.25*a);
+        pc = patch(function(g){ src(g, x0+Math.cos(an)*m, y0+Math.sin(an)*m); }, true);
+      } else if(k === 'flip'){
+        pc = patch(function(g){ g.translate(S, 0); g.scale(-1, 1); src(g, x0, y0); }, true);
+      } else {
+        var ox = 0, oy = 0;
+        for(var tt = 0; tt < 30; tt++){ ox = Math.random()*(W-S); oy = Math.random()*(H-S); if(skin(ox+R, oy+R, R*0.8) < 0.12 && Math.hypot(ox+R-d.x, oy+R-d.y) > S) break; }
+        pc = patch(function(g){ src(g, ox, oy); }, true);
+      }
+      xb.drawImage(pc, x0, y0);
+    }
+    function restore(d){ xb.save(); xb.beginPath(); xb.arc(d.x, d.y, R+1, 0, Math.PI*2); xb.clip(); xb.drawImage(ca, d.x-R-1, d.y-R-1, S+2, S+2, d.x-R-1, d.y-R-1, S+2, S+2); xb.restore(); }
+    function changed(d){
+      if(!px) return 999;
+      var q; try{ q = xb.getImageData(d.x-R, d.y-R, S, S).data; }catch(e){ return 999; }
+      var sum = 0, n = 0, st = 3;
+      for(var y = 0; y < S; y += st) for(var x = 0; x < S; x += st){
+        if((x-R)*(x-R)+(y-R)*(y-R) > R*R*0.5) continue;
+        var j = (y*S+x)*4, gx = Math.round(d.x-R+x), gy = Math.round(d.y-R+y), k2 = (gy*W+gx)*4;
+        sum += (Math.abs(q[j]-px[k2]) + Math.abs(q[j+1]-px[k2+1]) + Math.abs(q[j+2]-px[k2+2]))/3; n++;
+      }
+      return n ? sum/n : 0;
+    }
+    var kinds = [];
     while(kinds.length < L.n) kinds = kinds.concat(shuffle(L.kinds.slice()));
     diffs.forEach(function(d, i){
-      var k = kinds[i % kinds.length], x0 = d.x-R, y0 = d.y-R, s = R*2;
-      xb.save(); xb.beginPath(); xb.arc(d.x, d.y, R, 0, Math.PI*2); xb.clip();
-      if(k==='stk'){
-        xb.font = Math.round(R*1.3)+'px sans-serif'; xb.textAlign = 'center'; xb.textBaseline = 'middle';
-        xb.fillText(STK[Math.floor(Math.random()*STK.length)], d.x, d.y);
-      } else if(k==='flip'){
-        xb.translate(d.x*2, 0); xb.scale(-1, 1);
-        xb.drawImage(ca, x0, y0, s, s, x0, y0, s, s);
-      } else if(k==='tint'){
-        xb.globalCompositeOperation = 'hue'; xb.globalAlpha = Math.min(1, L.tint*3);
-        xb.fillStyle = ['#ff0040','#00c853','#2962ff','#ffab00'][i%4]; xb.fillRect(x0, y0, s, s);
-        xb.globalCompositeOperation = 'source-over'; xb.globalAlpha = L.tint; xb.fillRect(x0, y0, s, s);
-      } else {
-        // 다른 곳의 조각을 덮어씌움
-        var ox = Math.random()*(W-s), oy = Math.random()*(H-s);
-        xb.drawImage(ca, ox, oy, s, s, x0, y0, s, s);
+      var order = [kinds[i]].concat(shuffle(L.kinds.filter(function(k){ return k !== kinds[i]; }))).concat(['color','stk']);
+      for(var j = 0; j < order.length; j++){
+        apply(d, order[j], i); d.k = order[j];
+        if(changed(d) >= L.need || order[j] === 'stk') break;
+        restore(d);
       }
-      xb.restore();
     });
-    var found = 0, miss = 0, hints = 0, left = L.sec, over = false, t0 = Date.now();
-    function ring(ctx, d, col){ ctx.save(); ctx.lineWidth = 6; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(d.x, d.y, R*1.05, 0, Math.PI*2); ctx.stroke(); ctx.restore(); }
+
+    // ── 놀이 ──
+    var found = 0, miss = 0, hints = 0, left = L.sec, over = false, t0 = Date.now(), rapid = [], lockTo = 0;
+    var oa = el.querySelector('#oa'), ob = el.querySelector('#ob');
+    function mark(ov, d, cls, r){
+      var s2 = document.createElement('i'); s2.className = cls;
+      var rr = (r || R*1.15);
+      s2.style.left = ((d.x-rr)/W*100)+'%'; s2.style.top = ((d.y-rr)/H*100)+'%'; s2.style.width = (rr*2/W*100)+'%'; s2.style.height = (rr*2/H*100)+'%';
+      ov.appendChild(s2); return s2;
+    }
+    function both(d, cls, r){ return [mark(oa, d, cls, r), mark(ob, d, cls, r)]; }
     function tap(e){
       if(over) return;
+      var m = el.querySelector('#pm');
+      if(Date.now() < lockTo){ m.textContent = '✋ 잠깐! 천천히 살펴봐요'; return; }
       var c = e.currentTarget, rc = c.getBoundingClientRect();
       var x = (e.clientX - rc.left) * W / rc.width, y = (e.clientY - rc.top) * H / rc.height;
-      var hit = diffs.filter(function(d){ return !d.ok && Math.hypot(d.x-x, d.y-y) < R*1.25; })[0];
-      var m = el.querySelector('#pm');
+      var tol = Math.max(R*1.3, 34*W/rc.width);
+      var hit = diffs.filter(function(d){ return !d.ok && Math.hypot(d.x-x, d.y-y) < tol; })[0];
       if(hit){
-        hit.ok = true; found++; ring(xa, hit, '#ff3b5c'); ring(xb, hit, '#ff3b5c'); h.sfx('ok');
+        hit.ok = true; found++; h.sfx('ok');
+        el.querySelectorAll('.sph').forEach(function(n){ n.remove(); });
+        both(hit, 'spr');
         el.querySelector('#pf').textContent = found+' / '+L.n;
         el.querySelector('#ppb').style.width = (found/L.n*100)+'%';
-        m.textContent = ['⭕ 찾았다!','👍 좋아요!','🎯 정확해요!','✨ 대단해요!'][found%4];
+        m.textContent = found===L.n ? '🎉 다 찾았어요!' : ['⭕ 찾았다!','👍 좋아요!','🎯 정확해요!','✨ 대단해요!'][found%4]+' 앞으로 '+(L.n-found)+'군데';
         if(found===L.n) end(true);
       } else {
         miss++; h.sfx('no'); m.textContent = '❌ 거기는 아니에요';
+        var xm = both({x: x, y: y}, 'spx', R*0.5); later(function(){ xm.forEach(function(n){ n.remove(); }); }, 700);
         try{ if(navigator.vibrate) navigator.vibrate(80); }catch(e2){}
+        var now = Date.now(); rapid = rapid.filter(function(t2){ return now - t2 < 2500; }); rapid.push(now);
+        if(rapid.length >= 4){ rapid = []; lockTo = now + 2000; m.textContent = '✋ 마구 누르면 2초 쉬어요'; }
       }
     }
     ca.addEventListener('pointerdown', tap); cb.addEventListener('pointerdown', tap);
@@ -481,28 +584,30 @@ function spot(el, h){
       if(over) return;
       var d = diffs.filter(function(o){ return !o.ok; })[0]; if(!d) return;
       hints++; h.sfx('tap');
-      var n = 0, iv = every(function(){
-        n++; xb.save(); xb.globalAlpha = 0.6; ring(xb, d, n%2 ? '#ffd84d' : '#ffffff'); xb.restore();
-        if(n>=4){ clearInterval(iv); }
-      }, 250);
-      el.querySelector('#pm').textContent = '💡 노란 동그라미 근처를 봐요!';
+      el.querySelectorAll('.sph').forEach(function(n){ n.remove(); });
+      // 바로 알려 주지 않고 근처를 크게 보여 줌
+      var off = R*0.6, hd = {x: d.x + (Math.random()-0.5)*off, y: d.y + (Math.random()-0.5)*off};
+      var hs = both(hd, 'sph', R*2.2); later(function(){ hs.forEach(function(n){ n.remove(); }); }, 4000);
+      el.querySelector('#pm').textContent = '💡 노란 동그라미 안을 잘 봐요!';
     };
     every(function(){
       if(over) return;
       left = L.sec - Math.floor((Date.now()-t0)/1000);
-      el.querySelector('#pt').textContent = '⏱️ '+Math.max(0, left)+'초';
+      var pt = el.querySelector('#pt'); pt.textContent = '⏱️ '+Math.max(0, left)+'초'; pt.classList.toggle('low', left <= 15);
       if(left<=0) end(false);
     }, 500);
     function end(win){
       over = true;
-      diffs.forEach(function(d){ if(!d.ok){ ring(xa, d, '#2f9e44'); ring(xb, d, '#2f9e44'); } });
+      el.querySelectorAll('.sph').forEach(function(n){ n.remove(); });
+      diffs.forEach(function(d){ if(!d.ok) both(d, 'spm'); });
       var sec = Math.floor((Date.now()-t0)/1000);
-      var score = Math.max(0, found*100 + (win ? Math.max(0, L.sec-sec)*3 : 0) - miss*15 - hints*50);
+      var score = Math.max(0, found*100 + (win ? Math.max(0, L.sec-sec)*3 : 0) - miss*15 - hints*50 + (win && !hints && !miss ? 100 : 0));
       if(win) h.confetti(30);
+      el.querySelector('#pm').textContent = win ? (!hints && !miss ? '🌟 실수 없이 다 찾았어요! +100' : '🎉 다 찾았어요!') : '⏰ 초록 동그라미가 못 찾은 곳이에요';
       later(function(){
         stopAll();
         h.done('spot', score, true, (win ? '🏆 '+L.n+'군데 모두 찾았어요! ' : '⏰ 시간이 다 됐어요. '+found+'군데 찾았어요. ')+score+'점');
-      }, win ? 1600 : 2600);
+      }, win ? 2000 : 3500);
     }
   }
 }
