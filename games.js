@@ -93,6 +93,43 @@ function memory(el, h){
 }
 
 /* ② 구구단 퀴즈 — 60초 동안 몇 개 맞힐까요 */
+/* ⑦ 그림 보고 영어 단어 맞히기 */
+var WORDS = [['🍎','apple','사과'],['🐶','dog','개'],['🐱','cat','고양이'],['🚗','car','자동차'],['🏠','house','집'],['🌞','sun','해'],['🌙','moon','달'],['⭐','star','별'],['🐟','fish','물고기'],['🐦','bird','새'],
+  ['🍌','banana','바나나'],['🥛','milk','우유'],['📚','book','책'],['✏️','pencil','연필'],['🎒','bag','가방'],['🌳','tree','나무'],['🌸','flower','꽃'],['🐘','elephant','코끼리'],['🦁','lion','사자'],['🐵','monkey','원숭이'],
+  ['🍞','bread','빵'],['🥚','egg','달걀'],['⚽','ball','공'],['🚌','bus','버스'],['✈️','airplane','비행기'],['🚲','bike','자전거'],['⏰','clock','시계'],['🪑','chair','의자'],['🛏️','bed','침대'],['🚪','door','문'],
+  ['👟','shoes','신발'],['🧢','cap','모자'],['🍦','ice cream','아이스크림'],['🍰','cake','케이크'],['🐻','bear','곰'],['🐰','rabbit','토끼'],['🐸','frog','개구리'],['🐢','turtle','거북'],['🌈','rainbow','무지개'],['☔','umbrella','우산'],
+  ['🍓','strawberry','딸기'],['🍉','watermelon','수박'],['🐷','pig','돼지'],['🐮','cow','소'],['🐴','horse','말'],['🦆','duck','오리'],['🍕','pizza','피자'],['🐝','bee','벌'],['🦋','butterfly','나비'],['🔑','key','열쇠']];
+function eng(el, h){
+  var score = 0, left = 60, combo = 0, ans, pool = shuffle(WORDS.slice()), qi = 0;
+  el.innerHTML = '<div class="gbar"><span>🔤 영어 단어</span><span id="qs">0개</span><span id="qt">60초</span></div>'+
+    '<div class="qbox"><div class="qq" id="qq" style="font-size:84px;line-height:1.1"></div><div class="tm" id="qko"></div><div class="qc eng" id="qc"></div><div class="qmsg" id="qmsg">&nbsp;</div></div>';
+  function speak(w){ try{ var u = new SpeechSynthesisUtterance(w); u.lang = 'en-US'; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
+  function next(){
+    if(qi>=pool.length){ pool = shuffle(WORDS.slice()); qi = 0; }
+    var w = pool[qi++]; ans = w[1];
+    var opts = [w[1]]; while(opts.length<4){ var o = WORDS[Math.floor(Math.random()*WORDS.length)][1]; if(opts.indexOf(o)<0) opts.push(o); }
+    el.querySelector('#qq').textContent = w[0];
+    el.querySelector('#qko').textContent = score>=10 ? '' : '('+w[2]+')';
+    var c = el.querySelector('#qc'); c.innerHTML = '';
+    shuffle(opts).forEach(function(o){
+      var btn = document.createElement('button'); btn.textContent = o;
+      btn.onclick = function(){
+        var m = el.querySelector('#qmsg');
+        if(o===ans){ h.sfx('ok'); speak(ans); score++; combo++; m.textContent = combo>=3 ? '🔥 '+combo+'연속 정답!' : '⭕ 정답! '+ans; if(combo%5===0) h.confetti(10); }
+        else { h.sfx('no'); combo = 0; m.textContent = '❌ 정답은 '+ans; speak(ans); }
+        el.querySelector('#qs').textContent = score+'개';
+        next();
+      };
+      c.appendChild(btn);
+    });
+  }
+  next();
+  every(function(){
+    left--; el.querySelector('#qt').textContent = left+'초';
+    if(left<=0){ stopAll(); h.done('eng', score, true, '🔤 영어 단어 '+score+'개 맞혔어요!'); }
+  }, 1000);
+}
+
 function gugu(el, h){
   var score = 0, left = 60, combo = 0, ans;
   el.innerHTML = '<div class="gbar"><span>✖️ 구구단</span><span id="qs">0개</span><span id="qt">60초</span></div>'+
@@ -835,10 +872,11 @@ window.Games = {
     {k:'pmatch', ic:'🧠', nm:'가족 사진 짝 맞추기', how:'쉬움·보통·어려움 · 처음에 잠깐 보여 줘요', unit:'점', high:true},
     {k:'spot',   ic:'🔎', nm:'가족 사진 틀린 그림 찾기', how:'두 사진에서 다른 곳 찾기 · 4단계', unit:'점', high:true},
     {k:'song',   ic:'🎤', nm:'노래 번역 퀴즈', how:'인기 팝송 · 귀멸의 칼날 일본어 · 전체 듣기',       unit:'점', high:true},
+    {k:'eng',    ic:'🔤', nm:'그림 보고 영어 단어', how:'60초 동안 영어 단어 맞히기 · 소리도 나와요', unit:'개', high:true},
     {k:'gugu',   ic:'✖️', nm:'구구단 퀴즈',         how:'60초 동안 몇 개 맞힐까?',               unit:'개', high:true}
   ],
   start: function(name, el, h){ stopAll(); if(!h.sfx) h.sfx = function(){};
-    ({run:runner, mole:mole, pmatch:memory, spot:spot, song:song, gugu:gugu})[name](el, h); },
+    ({run:runner, mole:mole, pmatch:memory, spot:spot, song:song, gugu:gugu, eng:eng})[name](el, h); },
   stop: stopAll
 };
 })();

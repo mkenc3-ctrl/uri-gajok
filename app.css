@@ -662,3 +662,35 @@ button.nrow{display:block;width:100%;text-align:left;background:transparent;padd
 .spotbot{display:flex;gap:8px;align-items:stretch;margin-top:6px}
 .spotbot .qmsg{flex:1;margin:0;display:flex;align-items:center;justify-content:center}
 .spotbot #phint{flex:0 0 auto;width:auto;margin:0;padding:6px 14px;line-height:1.2}
+
+/* 더 즐겁게 (고도화) */
+.xcard{display:block;width:100%;text-align:left;background:#fff;border-radius:18px;padding:12px 14px;margin:10px 0;box-shadow:0 3px 0 #eadfc6;border:2px solid transparent;font:inherit;color:inherit}
+button.xcard{cursor:pointer}
+.xcard.xdone{border-color:#22b57355;background:#f2fbf5}
+.xhd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.xhd b{font-size:17px}.xhd span{font-size:13px;color:var(--sub);white-space:nowrap}
+.xsub{font-size:14px;color:var(--sub);margin-top:6px}
+.amrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.am{border:2px solid #eee;background:#fafafa;border-radius:14px;padding:8px 2px;font:inherit;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.am span{font-size:26px}.am.on{border-color:#22b573;background:#e9f9ef}
+.cups{display:flex;justify-content:space-between;width:100%;border:0;background:none;padding:0;font:inherit}
+.cups i{font-style:normal;font-size:26px;opacity:.45;transition:transform .2s}.cups i.on{opacity:1;transform:scale(1.1)}
+.chore{display:flex;align-items:center;gap:10px}.chore .cic{font-size:30px}.chore b{flex:1;font-size:17px}
+.chall div{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px dashed #eee}.chall span{flex:1;text-align:right;color:var(--sub);font-size:14px}
+.qq2{font-size:18px;font-weight:700;color:#d9480f}.qq2.big{font-size:22px;margin-bottom:10px;text-align:center}
+.qans{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed #eee}.qans p{margin:2px 0 0}
+.vote.closed{opacity:.85}
+.vopt2{position:relative;display:flex;justify-content:space-between;align-items:center;width:100%;margin:6px 0;padding:12px;border:2px solid #e4ddff;border-radius:14px;background:#fff;font:inherit;font-size:16px;overflow:hidden;text-align:left}
+.vopt2 i{position:absolute;left:0;top:0;bottom:0;background:#ece6ff;z-index:0;transition:width .3s}
+.vopt2 span,.vopt2 small{position:relative;z-index:1}.vopt2.mine{border-color:#7b61ff;font-weight:700}.vopt2.win{border-color:#f5b700;background:#fff8dc}
+.book{padding:10px 0;border-bottom:1px dashed #eee}
+.brow{display:flex;gap:6px;align-items:center;margin-top:6px}.brow .inp{flex:1;margin:0;min-width:0}.brow .mbtn{white-space:nowrap}
+.shelf{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end;padding:8px;background:linear-gradient(#fff 85%,#c8a165 85%);border-radius:8px}
+.spine{writing-mode:vertical-rl;font-size:12px;padding:6px 3px;height:96px;max-height:96px;overflow:hidden;border-radius:3px;color:#fff;font-weight:700}
+.spine.c0{background:#ff6b6b}.spine.c1{background:#4f8cff}.spine.c2{background:#22b573}.spine.c3{background:#b06bff}.spine.c4{background:#ff9a2e}
+.bar{height:12px;background:#f0ebe0;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#ffb703,#fb8500);border-radius:8px}
+.mvp{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#fff3c4,#ffe08a);border-radius:18px;padding:12px 14px;margin:12px 0;box-shadow:0 3px 0 #f0d070}
+.mvp .crown{font-size:34px}.mvp .mvpf{display:flex}.mvp .ava{width:48px;height:48px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;background:#fff;margin-right:-8px;border:3px solid #fff}
+.mvp .ava img{width:100%;height:100%;object-fit:cover}
+.mvp small{display:block;color:#8a6d00;font-size:12px}.mvp b{font-size:19px;margin-right:6px}.mvp span{color:#b36b00;font-weight:700}
+.qc.eng button{font-size:20px}

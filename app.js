@@ -128,6 +128,7 @@ function fixUp(){
   if(!S.msgs) S.msgs = [];
   if(!S.events) S.events = [];
   if(!S.money) S.money = [];
+  if(!S.x) S.x = {};
   S.members.forEach(function(mb){
     var def = DEFAULT_MEMBERS.filter(function(d){ return d.id===mb.id; })[0];
     if(def){ if(!mb.role) mb.role = def.role; mb.kid = def.kid; }
@@ -149,7 +150,8 @@ function save(){ saveLocal(); if(window.Cloud && Cloud.on && Cloud.user && synce
 /* 자료를 작은 조각(행)으로 나눠 바뀐 조각만 올림 → 두 휴대폰이 동시에 써도 덜 겹침 */
 var synced = false, lastSent = {}, pushT = null, pushing = false;
 function rowsOf(){
-  var rows = {meta:{members:S.members, pin:S.pin||'', rec:S.rec||{}, rewards:S.rewards, caps:S.caps, ver:S.ver}};
+  var rows = {meta:{members:S.members, pin:S.pin||'', rec:S.rec||{}, rewards:S.rewards, caps:S.caps, ver:S.ver, fgoal:S.fgoal||null}};
+  Object.keys(S.x||{}).forEach(function(k){ rows['x:'+k] = S.x[k]; });
   Object.keys(S.m).forEach(function(id){ rows['m:'+id] = S.m[id]; });
   Object.keys(S.days).forEach(function(ds){ Object.keys(S.days[ds]).forEach(function(id){ rows['d:'+ds+':'+id] = S.days[ds][id]; }); });
   S.reqs.forEach(function(r){ rows['r:'+r.id] = r; });
@@ -160,7 +162,8 @@ function rowsOf(){
 }
 function applyRow(k, v){
   var p = k.split(':');
-  if(k==='meta'){ if(v){ S.members = v.members; S.pin = v.pin; S.rec = v.rec; S.rewards = v.rewards; S.caps = v.caps || {}; S.ver = v.ver || 2; } }
+  if(k==='meta'){ if(v){ S.members = v.members; S.pin = v.pin; S.rec = v.rec; S.rewards = v.rewards; S.caps = v.caps || {}; S.ver = v.ver || 2; S.fgoal = v.fgoal || null; } }
+  else if(p[0]==='x'){ var xk = k.slice(2); if(!S.x) S.x = {}; if(v) S.x[xk] = v; else delete S.x[xk]; }
   else if(p[0]==='m'){ if(v) S.m[p[1]] = v; }
   else if(p[0]==='d'){ if(!S.days[p[1]]) S.days[p[1]] = {}; if(v) S.days[p[1]][p[2]] = v; else delete S.days[p[1]][p[2]]; }
   else if(p[0]==='g'){
@@ -577,7 +580,7 @@ function render(){
   if(me) document.documentElement.style.setProperty('--me', me.color);
   if(window.Games) Games.stop();
   var f = {cal:vCal, money:vMoney, who:vWho, login:vLogin, shop:vShop, home:vHome, me:(me && !me.kid ? vParent : vKid), hw:vHw, out:vOut, free:vFree, report:vReport,
-           praise:vPraise, kid:vKidView, settings:vSettings, games:vGames, play:vPlay, chat:vChat}[V.screen] || vHome;
+           praise:vPraise, kid:vKidView, settings:vSettings, games:vGames, play:vPlay, chat:vChat, qa:vQa, vote:vVote, books:vBooks}[V.screen] || vHome;
   app.innerHTML = f(me);
   navBar(me);
   fillProofs();
@@ -857,6 +860,7 @@ function vMoney(me){
   h += '<div class="hero"'+heroBg(k)+'><div class="row"><div class="ava">'+bigFace(k)+'</div><div><div class="nm">'+esc(k.name)+'의 용돈 기입장</div>'+
     '<div class="ttl">지금 남은 돈</div><div class="mbal">'+won(bal)+'</div></div></div>'+
     '<div class="chips"><span class="chip">📥 이번 달 들어온 돈 '+won(mIn)+'</span><span class="chip">📤 이번 달 쓴 돈 '+won(mOut)+'</span></div></div>';
+  h += goalHtml(k);
   h += '<div class="section"><h2>✏️ '+(me.kid?'기록하기':'용돈 주기·기록하기')+'</h2>'+
     '<div class="mio"><button class="'+(t.mio==='in'?'on in':'')+'" data-act="mio" data-v="in">📥 들어온 돈</button><button class="'+(t.mio==='out'?'on out':'')+'" data-act="mio" data-v="out">📤 쓴 돈</button></div>'+
     '<div class="mcats">';
@@ -908,7 +912,7 @@ function vHome(){
 
   var arr = kids().map(function(mb){ return {mb:mb, sc:starCount(mb.id), p:S.m[mb.id].points}; })
     .sort(function(a,b){ return b.sc-a.sc || b.p-a.p; });
-  h += feedHtml(8);
+  h += mvpHtml() + fgoalHtml() + feedHtml(8);
   h += '<div class="board"><h2>🏅 오늘의 별 모으기</h2>';
   arr.forEach(function(r,i){
     h += '<div class="rank"><div class="no">'+['🥇','🥈','🥉'][i]+'</div><div class="who">'+mini(r.mb)+' '+esc(r.mb.name)+'</div><div class="sc">⭐ '+r.sc+'개 · '+r.p+'점</div></div>';
@@ -957,6 +961,7 @@ function vKid(me){
     h += '<button class="seen" data-act="seen">확인했어요</button></div>';
   }
 
+  h += amHtml(me) + waterHtml(me);
   // 오늘의 미션
   h += '<div class="mission"><div class="mhd"><h2>🎯 오늘의 미션</h2><span>'+mc+' / '+MISSIONS.length+'</span></div>'+
     '<div class="bar mbar"><i style="width:'+(mc*100/MISSIONS.length)+'%"></i></div>'+
@@ -972,7 +977,7 @@ function vKid(me){
     h += '</div>';
     if(m.na && !s2) h += '<button class="mna" data-act="mna" data-v="'+m.k+'">'+m.na+'</button>';
   });
-  h += '</div>';
+  h += '</div>' + choreHtml(me) + qaCard(me);
 
   // 자유시간·외출·마감
   h += '<div class="tiles">'+
@@ -985,13 +990,15 @@ function vKid(me){
     '<button class="tile t-money" data-act="money"><span class="ic">💰</span><span><div class="tt">용돈 기입장</div><div class="st">남은 돈 '+won(moneyBal(me.id))+'</div></span></button>'+
     '<button class="tile t-cal" data-act="cal"><span class="ic">📅</span><span><div class="tt">가족 일정</div><div class="st">생일·병원·행사</div></span></button>'+
     '<button class="tile t-pet" data-act="pet"><span class="ic petic">'+pet(me.id).ic+'</span><span><div class="tt">동물 친구</div><div class="st">'+pet(me.id).nm+'</div></span></button>'+
+    '<button class="tile t-vote" data-act="vote"><span class="ic">🗳️</span><span><div class="tt">가족 투표</div><div class="st">'+(openVotes().filter(function(o){ return myVote(o.id, me.id)==null; }).length ? '투표할 것 '+openVotes().filter(function(o){ return myVote(o.id, me.id)==null; }).length+'개' : '함께 정해요')+'</div></span></button>'+
+    '<button class="tile t-books" data-act="books"><span class="ic">📚</span><span><div class="tt">독서 기록장</div><div class="st">다 읽은 책 '+booksOf(me.id).filter(function(b){ return b.done; }).length+'권</div></span></button>'+
     '<button class="tile t-urgent wide2" data-act="urgent"><span class="ic">🚨</span><span><div class="tt">긴급 공지 올리기</div><div class="st">가족 모두에게 바로 크게 알려요</div></span></button>'+
     '<button class="tile t-chat wide2" data-act="chat"><span class="ic">💬</span><span><div class="tt">가족 대화방'+(unread(me.id)?' <span class="nb">새 쪽지 '+unread(me.id)+'</span>':'')+'</div><div class="st">엄마·아빠·형제에게 1:1 쪽지 보내기</div></span></button>'+
     '<button class="tile t-game wide2'+(open?'':' locked')+'" data-act="games"><span class="ic">'+(open?'🕹️':'🔒')+'</span><span><div class="tt">게임방</div><div class="st">'+
       (open?'짝 맞추기 · 틀린 그림 · 노래 퀴즈 · 구구단':'미션을 다 하면 열려요')+'</div></span></button>'+
     '</div>';
 
-  h += feedHtml(5);
+  h += fgoalHtml() + feedHtml(5);
   h += '<div class="today"><h3>오늘 모은 별</h3><div class="starrow">'+
     '<div class="'+(s.miss?'on':'')+'"><b>⭐</b>미션 완료</div><div class="'+(s.out?'on':'')+'"><b>⭐</b>외출 약속</div>'+
     '<div class="'+(s.free?'on':'')+'"><b>⭐</b>자유시간</div><div class="'+(s.rep?'on':'')+'"><b>⭐</b>마감 보고</div></div></div>';
@@ -1301,7 +1308,7 @@ function vParent(me){
   var h = backBar('home')+
     '<div class="hero"'+heroBg(me)+'><div class="row"><div class="ava">'+bigFace(me)+'</div><div><div class="nm">'+esc(me.name)+'</div>'+
     '<div class="ttl">'+esc(me.role)+' · 보고 확인 담당</div></div></div>'+
-    '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + upcomingHtml(me) + msgNotice(me) + stripHtml('📷 오늘의 가족 사진', 10) +
+    '<div class="chips"><span class="chip">📥 확인할 것 '+list.length+'개</span>'+(unread(me.id)?'<span class="chip">💬 새 쪽지 '+unread(me.id)+'개</span>':'')+'</div></div>' + urgentHtml(me) + upcomingHtml(me) + msgNotice(me) + fgoalHtml() + qaCard(me) + stripHtml('📷 오늘의 가족 사진', 10) +
     '<button class="wide urgentbtn" data-act="urgent">🚨 긴급 공지 올리기</button>'+
     '<div class="pbtns"><button class="wide" data-act="cal">📅 가족 일정</button><button class="wide" data-act="moneykids">💰 아이들 용돈</button></div>'+
     '<button class="wide chatbtn" data-act="chat">💬 쪽지함'+(unread(me.id)?' <span class="nb">'+unread(me.id)+'</span>':'')+'</button>';
@@ -1328,7 +1335,9 @@ function vParent(me){
     h += '</div><div class="tm">'+(outNow?'🚶 '+esc(outNow.place)+'에 외출 중 · ':'')+(freeNow?'🎮 자유시간 중 · ':freeOpen(k.id)?'🎮 자유시간 열림 · ':'')+
       '🌙 '+(d.report?(d.report.st==='ok'?'마감 완료':d.report.st==='wait'?'마감 확인 대기':'마감 다시 쓰는 중'):'마감 전')+'</div></div><span class="arrow">›</span></button>';
   });
-  h += '</div>' + weekAllHtml() + askHtml() + '<button class="wide" data-act="praise">💌 아이에게 칭찬 보내기</button>'+
+  h += '</div>' + choreAllHtml() + weekAllHtml() + askHtml() +
+    '<div class="pbtns"><button class="wide" data-act="vote">🗳️ 가족 투표</button><button class="wide" data-act="books">📚 아이들 독서</button></div>'+
+    '<button class="wide" data-act="fgoal">🎯 이번 달 가족 목표 정하기</button><button class="wide" data-act="praise">💌 아이에게 칭찬 보내기</button>'+
     '<button class="wide" data-act="games">🕹️ 게임방 (아이들과 기록 겨루기)</button>' + memoryHtml() + pinBtn(me) + '<button class="ownerbtn" data-act="owner">'+(isOwner(me)?'📱 이 휴대폰은 <b>'+esc(me.name)+'</b> 것 ✅ <small>(누르면 해제)</small>':'📱 이 휴대폰은 내 것으로 정하기 <small>(앱을 켜면 바로 내 화면)</small>')+'</button>';
   return h;
 }
@@ -1637,6 +1646,67 @@ app.addEventListener('click', function(e){
       break;
     case 'slide': slideshow(v); break;
     case 'cal': go('cal'); break;
+    case 'amck':
+      if(!me) break; d = day(me.id); d.am = d.am || {}; d.am[v] = !d.am[v]; sfx('tap');
+      if(AM.every(function(x){ return d.am[x.k]; }) && !d.amPts){ d.amPts = true; addPts(me.id, 5, '아침 준비 끝 🌅'); } else save();
+      render(); break;
+    case 'water':
+      if(!me) break; d = day(me.id); d.water = Math.min(8, (d.water||0) + 1); sfx('tap');
+      if(d.water===8 && !d.waterPts){ d.waterPts = true; addPts(me.id, 5, '물 8컵 다 마셨어요 💧'); } else save();
+      render(); break;
+    case 'qa': go('qa'); break;
+    case 'qasave':
+      var qtx = ((document.getElementById('qain')||{}).value||'').trim();
+      if(!qtx){ toast('답을 적어 주세요 ✏️'); break; }
+      var qk = 'qa:'+today()+':'+me.id, qfirst = !S.x[qk];
+      S.x[qk] = {tx:qtx.slice(0,100), t:Date.now()};
+      xClean('qa:', 14);
+      if(qfirst && me.kid) addPts(me.id, 5, '오늘의 질문에 답했어요 ❓'); else { save(); toast('✅ 답을 올렸어요', {kind:'ok'}); }
+      render(); break;
+    case 'vote': go('vote'); break;
+    case 'vtpl': var tp = VOTE_TPL[+v]; if(tp){ document.getElementById('vq').value = tp.q; document.querySelectorAll('.vopt').forEach(function(x, i){ x.value = tp.o[i]||''; }); } break;
+    case 'vmake':
+      var vq = (document.getElementById('vq').value||'').trim(), vo = [].map.call(document.querySelectorAll('.vopt'), function(x){ return x.value.trim(); }).filter(Boolean);
+      if(!vq){ toast('무엇을 정할지 적어 주세요'); break; }
+      if(vo.length<2){ toast('고를 것을 2개 이상 적어 주세요'); break; }
+      var vid = uid(); S.x['vote:'+vid] = {id:vid, q:vq.slice(0,40), o:vo.slice(0,4).map(function(x){ return x.slice(0,20); }), by:me.id, t:Date.now(), closed:false};
+      voteClean(); save(); render(); sfx('ok'); toast('🗳️ 투표를 올렸어요. 가족 모두 고를 수 있어요', {kind:'ok'}); break;
+    case 'vpick':
+      var vp = v.split('|'); S.x['vt:'+vp[0]+':'+me.id] = +vp[1]; save(); render(); sfx('ok'); break;
+    case 'vclose': var vc = S.x['vote:'+v]; if(vc && confirm('투표를 마칠까요?')){ vc.closed = true; save(); render(); } break;
+    case 'books': if(v) V.kid = v; else if(me && me.kid) V.kid = me.id; else if(!V.kid || !mem(V.kid) || !mem(V.kid).kid) V.kid = (kids()[0]||{}).id; go('books'); break;
+    case 'bkid': V.kid = v; render(); break;
+    case 'badd':
+      var bt = (document.getElementById('btitle').value||'').trim(), btot = +(document.getElementById('btot').value||0);
+      if(!bt){ toast('책 이름을 적어 주세요 📖'); break; }
+      var bk = mem(V.kid); if(!bk) break;
+      booksOf(bk.id).unshift({id:uid(), title:bt.slice(0,30), tot:btot>0?Math.min(btot, 3000):0, pg:0, done:false, t:Date.now()});
+      save(); render(); sfx('ok'); break;
+    case 'bpg':
+      var bb = byId(booksOf(V.kid), v), bin = document.getElementById('bp_'+v), bn = bin ? +bin.value : 0;
+      if(!bb || !(bn>0)){ toast('읽은 쪽수를 적어 주세요'); break; }
+      bb.pg = bb.tot ? Math.min(bb.tot, bb.pg + bn) : bb.pg + bn; bb.last = Date.now();
+      if(bb.tot && bb.pg>=bb.tot){ finishBook(bb); } else { save(); toast('📖 '+bn+'쪽 읽었어요! 모두 '+bb.pg+'쪽', {kind:'ok'}); }
+      render(); break;
+    case 'bdone': var bd = byId(booksOf(V.kid), v); if(bd && !bd.done){ finishBook(bd); render(); } break;
+    case 'bdel': if(confirm('이 책 기록을 지울까요?')){ S.m[V.kid].books = booksOf(V.kid).filter(function(x){ return x.id!==v; }); save(); render(); } break;
+    case 'goalset':
+      var gk = mem(v); if(!gk) break;
+      var gnm = prompt('무엇을 사려고 모아요? (예: 레고, 인형)', (S.m[gk.id].goal||{}).nm||''); if(gnm==null) break;
+      gnm = gnm.trim(); if(!gnm){ delete S.m[gk.id].goal; save(); render(); break; }
+      var gamt = +String(prompt('얼마가 필요해요? (숫자만, 원)', (S.m[gk.id].goal||{}).amt||'')||'').replace(/[^0-9]/g,'');
+      if(!(gamt>0)){ toast('금액을 숫자로 적어 주세요'); break; }
+      S.m[gk.id].goal = {nm:gnm.slice(0,20), amt:gamt}; save(); render(); toast('🐷 저축 목표를 정했어요!', {kind:'ok'}); break;
+    case 'chore':
+      if(!me) break; d = day(me.id); if(d.chore) break;
+      d.chore = 1; addPts(me.id, 5, '당번 일 끝: '+choreOf(me.id).nm); render(); break;
+    case 'fgoal':
+      var cur = S.fgoal && S.fgoal.ym===today().slice(0,7) ? S.fgoal : null;
+      var ft = prompt('이번 달 가족 목표 보상은 무엇인가요? (예: 가족 외식, 놀이공원)', cur ? cur.title : '가족 외식'); if(ft==null) break;
+      ft = ft.trim(); if(!ft){ S.fgoal = null; save(); render(); break; }
+      var fn = +String(prompt('아이들이 이번 달 모을 별 개수는? (숫자만)', cur ? cur.target : 150)||'').replace(/[^0-9]/g,'');
+      if(!(fn>0)){ toast('별 개수를 숫자로 적어 주세요'); break; }
+      S.fgoal = {title:ft.slice(0,20), target:fn, ym:today().slice(0,7)}; save(); render(); toast('🎯 가족 목표를 정했어요!', {kind:'ok'}); break;
     case 'moneykids': var mk1 = kids()[0]; if(mk1){ V.kid = V.kid && mem(V.kid) && mem(V.kid).kid ? V.kid : mk1.id; go('money'); } break;
     case 'money': if(v) V.kid = v; go('money'); break;
     case 'eic': V.tmp.eic = v; app.querySelectorAll('.evic button').forEach(function(x){ x.classList.toggle('on', x===b); }); break;
@@ -1872,6 +1942,134 @@ function calHtml(id){
   }
   return '<div class="section"><h2>📅 '+(m+1)+'월 도장판 <small class="tm">별 모은 날 '+cnt+'일</small></h2>'+h+'</div>'+
     '<div class="callegend">⭐ 별 1~2개 · 🌟 3개 · 🏆 4개 모두!</div></div>';
+}
+
+/* ---------- 더 즐겁게 (2026-11-14 고도화) ---------- */
+var AM = [{k:'teeth', ic:'🪥', nm:'양치'}, {k:'dress', ic:'👕', nm:'옷 입기'}, {k:'bag', ic:'🎒', nm:'가방'}, {k:'eat', ic:'🍚', nm:'아침밥'}];
+function amHtml(me){
+  var d = peekDay(me.id), am = d.am || {}, n = AM.filter(function(a){ return am[a.k]; }).length, done = n===AM.length;
+  var h = '<div class="xcard'+(done?' xdone':'')+'"><div class="xhd"><b>🌅 아침 준비</b><span>'+(done?'다 했어요! +5점 ✅':n+' / '+AM.length+' · 다 하면 +5점')+'</span></div><div class="amrow">';
+  AM.forEach(function(a){ h += '<button class="am'+(am[a.k]?' on':'')+'" data-act="amck" data-v="'+a.k+'"><span>'+(am[a.k]?'✅':a.ic)+'</span>'+a.nm+'</button>'; });
+  return h + '</div></div>';
+}
+function waterHtml(me){
+  var w = peekDay(me.id).water || 0, h = '<div class="xcard'+(w>=8?' xdone':'')+'"><div class="xhd"><b>💧 물 마시기</b><span>'+(w>=8?'8컵 다 마셨어요! +5점 ✅':w+' / 8컵 · 마실 때마다 눌러요')+'</span></div><button class="cups" data-act="water"'+(w>=8?' disabled':'')+'>';
+  for(var i=0;i<8;i++) h += '<i class="'+(i<w?'on':'')+'">'+(i<w?'🥛':'🫙')+'</i>';
+  return h + '</button></div>';
+}
+var CHORES = [{ic:'🥄', nm:'수저 놓기'}, {ic:'👟', nm:'현관 신발 정리'}, {ic:'♻️', nm:'분리수거 돕기'}, {ic:'🧺', nm:'빨래 개기 돕기'}];
+function dayNum(){ var t = new Date(); t.setHours(0,0,0,0); return Math.round(t.getTime()/86400000); }
+function choreOf(id){ var ks = kids(), i = 0; ks.forEach(function(k, j){ if(k.id===id) i = j; }); return CHORES[(i + dayNum()) % CHORES.length]; }
+function choreHtml(me){
+  var c = choreOf(me.id), done = peekDay(me.id).chore;
+  return '<div class="xcard'+(done?' xdone':'')+'"><div class="xhd"><b>🧽 오늘의 당번</b><span>매일 바뀌어요</span></div>'+
+    '<div class="chore"><span class="cic">'+c.ic+'</span><b>'+c.nm+'</b>'+(done?'<span class="mdone">✅ +5점</span>':'<button class="mbtn" data-act="chore">다 했어요</button>')+'</div></div>';
+}
+function choreAllHtml(){
+  var h = '<div class="section"><h2>🧽 오늘의 당번</h2><div class="chall">';
+  kids().forEach(function(k){ var c = choreOf(k.id); h += '<div>'+mini(k)+' <b>'+esc(k.name)+'</b><span>'+c.ic+' '+c.nm+'</span>'+(peekDay(k.id).chore?'✅':'⏳')+'</div>'; });
+  return h + '</div></div>';
+}
+var QUESTIONS = ['오늘 가장 웃겼던 일은?','요즘 제일 좋아하는 음식은?','하늘을 날 수 있다면 어디 가고 싶어요?','가족에게 고마웠던 일 하나!','내일 꼭 하고 싶은 일은?','동물이 된다면 무슨 동물?','가장 기억에 남는 여행은?','요즘 빠진 노래나 놀이는?','어른이 되면 해 보고 싶은 일은?','오늘 나를 칭찬한다면?','가족 여행 간다면 어디로?','소원 3개를 빈다면 첫 번째는?','가장 좋아하는 계절과 이유는?','요즘 친구와 무엇을 하고 놀아요?','오늘 배운 새로운 것 하나!','하루 동안 엄마(아빠)가 된다면?','제일 무서운 것은?','가장 갖고 싶은 초능력은?','우리 가족 자랑 하나!','주말에 가족과 하고 싶은 것은?','내가 만든다면 어떤 게임?','오늘 기분을 날씨로 말하면?','가장 좋아하는 책이나 만화는?','타임머신이 있다면 언제로?','가족에게 바라는 것 하나!','나만의 비밀 장소가 있다면?','10년 뒤 나는 무엇을 하고 있을까?','오늘 고마운 사람은 누구?','가장 맛있었던 엄마 아빠 요리는?','새로운 이름을 짓는다면?'];
+function todayQ(){ return QUESTIONS[dayNum() % QUESTIONS.length]; }
+function qaOf(ds){ var r = {}; Object.keys(S.x||{}).forEach(function(k){ var p = k.split(':'); if(p[0]==='qa' && p[1]===ds) r[p[2]] = S.x[k]; }); return r; }
+function xClean(pre, days){ var cut = dsAdd(today(), -days); Object.keys(S.x).forEach(function(k){ if(k.indexOf(pre)===0 && k.split(':')[1] < cut) delete S.x[k]; }); }
+function qaCard(me){
+  var a = qaOf(today()), n = Object.keys(a).filter(function(id){ return mem(id); }).length, mine = a[me.id];
+  return '<button class="xcard qacard" data-act="qa"><div class="xhd"><b>❓ 오늘의 가족 질문</b><span>'+n+' / '+S.members.length+'명 답함</span></div>'+
+    '<div class="qq2">'+esc(todayQ())+'</div><div class="xsub">'+(mine?'✅ 내 답: '+esc(mine.tx):'눌러서 답하고 가족 답도 봐요'+(me.kid?' (+5점)':''))+' ›</div></button>';
+}
+function vQa(me){
+  var a = qaOf(today()), mine = a[me.id];
+  var h = backBar() + pageHd('❓', '오늘의 가족 질문', '모두 답하면 서로의 답을 볼 수 있어요', 'linear-gradient(135deg,#ff9a8b,#ffd166)');
+  h += '<div class="section"><div class="qq2 big">'+esc(todayQ())+'</div>'+
+    '<textarea class="inp" id="qain" maxlength="100" rows="3" placeholder="내 생각을 적어요">'+esc(mine?mine.tx:'')+'</textarea>'+
+    '<button class="big" data-act="qasave">'+(mine?'✏️ 답 고치기':'✅ 답 올리기')+'</button></div>';
+  h += '<div class="section"><h2>👨‍👩‍👧‍👦 가족의 답</h2>';
+  S.members.forEach(function(mb){
+    var x = a[mb.id];
+    h += '<div class="qans">'+mini(mb)+'<div><b>'+esc(mb.name)+'</b><p>'+(x ? (mine || mb.id===me.id ? esc(x.tx) : '🙈 내가 답하면 보여요') : '<span class="tm">아직 답하지 않았어요</span>')+'</p></div></div>';
+  });
+  h += '</div>';
+  var y = qaOf(dayBefore(today())), yk = Object.keys(y).filter(function(id){ return mem(id); });
+  if(yk.length){
+    h += '<div class="section"><h2>🕘 어제의 질문</h2><div class="tm" style="margin-bottom:8px">'+esc(QUESTIONS[(dayNum()-1) % QUESTIONS.length])+'</div>';
+    yk.forEach(function(id){ h += '<div class="qans">'+mini(mem(id))+'<div><b>'+esc(mem(id).name)+'</b><p>'+esc(y[id].tx)+'</p></div></div>'; });
+    h += '</div>';
+  }
+  return h;
+}
+var VOTE_TPL = [{q:'오늘 저녁 뭐 먹을까?', o:['🍗 치킨','🍕 피자','🍜 짜장면','🍚 집밥']}, {q:'이번 주말 어디 갈까?', o:['🏞️ 공원','🎬 영화관','🏊 수영장','🏠 집에서 놀기']}, {q:'가족 영화 뭐 볼까?', o:['🦁 동물 영화','🚀 우주 모험','😂 웃긴 영화','👸 공주 이야기']}];
+function votes(){ return Object.keys(S.x||{}).filter(function(k){ return k.indexOf('vote:')===0; }).map(function(k){ return S.x[k]; }).sort(function(a,b){ return b.t-a.t; }); }
+function openVotes(){ return votes().filter(function(o){ return !o.closed; }); }
+function myVote(vid, id){ var x = S.x['vt:'+vid+':'+id]; return x==null ? null : x; }
+function voteClean(){ votes().slice(8).forEach(function(o){ Object.keys(S.x).forEach(function(k){ if(k==='vote:'+o.id || k.indexOf('vt:'+o.id+':')===0) delete S.x[k]; }); }); }
+function vVote(me){
+  var h = backBar() + pageHd('🗳️', '가족 투표', '모두 함께 골라요', 'linear-gradient(135deg,#7b61ff,#b8a6ff)');
+  var list = votes();
+  if(!list.length) h += '<div class="empty">아직 투표가 없어요. 아래에서 만들어 봐요!</div>';
+  list.forEach(function(o){
+    var cnt = o.o.map(function(){ return []; }), mine = myVote(o.id, me.id), total = 0;
+    S.members.forEach(function(mb){ var x = myVote(o.id, mb.id); if(x!=null && cnt[x]){ cnt[x].push(mb); total++; } });
+    var top = Math.max.apply(null, cnt.map(function(c){ return c.length; }));
+    h += '<div class="section vote'+(o.closed?' closed':'')+'"><div class="xhd"><b>'+esc(o.q)+'</b><span>'+(o.closed?'🏁 끝남':total+' / '+S.members.length+'명')+'</span></div>';
+    o.o.forEach(function(t, i){
+      var c = cnt[i], pct = total ? Math.round(c.length*100/total) : 0, win = o.closed && c.length===top && top>0;
+      h += '<button class="vopt2'+(mine===i?' mine':'')+(win?' win':'')+'" data-act="'+(o.closed?'':'vpick')+'" data-v="'+o.id+'|'+i+'"'+(o.closed?' disabled':'')+'><i style="width:'+pct+'%"></i><span>'+(win?'👑 ':'')+esc(t)+'</span><small>'+c.map(function(mb){ return mb.emoji; }).join('')+' '+c.length+'표</small></button>';
+    });
+    if(!o.closed && (o.by===me.id || !me.kid)) h += '<button class="mbtn ghost" style="margin-top:6px" data-act="vclose" data-v="'+o.id+'">🏁 투표 마치기</button>';
+    h += '<div class="tm" style="margin-top:4px">'+(mem(o.by)?esc(mem(o.by).name)+'이 만듦 · ':'')+dayLabel(o.t)+'</div></div>';
+  });
+  h += '<div class="section"><h2>➕ 새 투표 만들기</h2><div class="qnote">'+VOTE_TPL.map(function(t, i){ return '<button data-act="vtpl" data-v="'+i+'">'+esc(t.q)+'</button>'; }).join('')+'</div>'+
+    '<input class="inp" id="vq" maxlength="40" placeholder="무엇을 정할까요?">';
+  for(var i=0;i<4;i++) h += '<input class="inp vopt" maxlength="20" placeholder="고를 것 '+(i+1)+(i>1?' (안 써도 돼요)':'')+'">';
+  return h + '<button class="big" data-act="vmake">🗳️ 투표 올리기</button></div>';
+}
+function booksOf(id){ var st = S.m[id]; if(!st) return []; if(!st.books) st.books = []; return st.books; }
+function finishBook(b){ b.done = true; b.end = Date.now(); if(b.tot) b.pg = b.tot; addPts(V.kid, 15, '책 다 읽음: '+b.title+' 📚'); confetti(30); }
+function vBooks(me){
+  var k = mem(V.kid); if(!k || !k.kid) return backBar()+'<div class="empty">아이를 먼저 골라 주세요</div>';
+  var list = booksOf(k.id), done = list.filter(function(b){ return b.done; }), reading = list.filter(function(b){ return !b.done; });
+  var h = backBar() + pageHd('📚', k.name+'의 독서 기록장', '한 권 다 읽으면 +15점!', 'linear-gradient(135deg,#22b573,#9be15d)');
+  if(!me.kid){ h += '<div class="mkids">'; kids().forEach(function(x){ h += '<button class="'+(x.id===k.id?'on':'')+'" data-act="bkid" data-v="'+x.id+'">'+mini(x)+' '+esc(x.name)+'<small>'+booksOf(x.id).filter(function(b){ return b.done; }).length+'권</small></button>'; }); h += '</div>'; }
+  h += '<div class="section"><h2>📖 읽고 있는 책</h2>';
+  if(!reading.length) h += '<div class="empty">읽고 있는 책이 없어요. 아래에서 새 책을 적어요!</div>';
+  reading.forEach(function(b){
+    var pct = b.tot ? Math.round(b.pg*100/b.tot) : 0;
+    h += '<div class="book"><div class="xhd"><b>📘 '+esc(b.title)+'</b><button class="bdel" data-act="bdel" data-v="'+b.id+'">✕</button></div>'+
+      (b.tot ? '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="tm">'+b.pg+' / '+b.tot+'쪽 ('+pct+'%)</div>' : '<div class="tm">지금까지 '+b.pg+'쪽</div>')+
+      '<div class="brow"><input class="inp" id="bp_'+b.id+'" type="number" inputmode="numeric" min="1" placeholder="오늘 읽은 쪽"><button class="mbtn" data-act="bpg" data-v="'+b.id+'">읽었어요</button><button class="mbtn ghost" data-act="bdone" data-v="'+b.id+'">다 읽었어요 🎉</button></div></div>';
+  });
+  h += '</div><div class="section"><h2>➕ 새 책 적기</h2><input class="inp" id="btitle" maxlength="30" placeholder="책 이름"><input class="inp" id="btot" type="number" inputmode="numeric" min="1" placeholder="모두 몇 쪽? (몰라도 돼요)"><button class="big" data-act="badd">📚 책장에 넣기</button></div>';
+  h += '<div class="section"><h2>🏆 다 읽은 책 '+done.length+'권</h2>';
+  if(!done.length) h += '<div class="empty">첫 책을 다 읽으면 여기에 꽂혀요</div>';
+  else { h += '<div class="shelf">'; done.forEach(function(b, i){ h += '<span class="spine c'+(i%5)+'" title="'+esc(b.title)+'">'+esc(b.title)+'</span>'; }); h += '</div>'; }
+  return h + '</div>';
+}
+function goalHtml(k){
+  var g = S.m[k.id].goal, bal = moneyBal(k.id);
+  if(!g) return '<button class="xcard goal" data-act="goalset" data-v="'+k.id+'"><div class="xhd"><b>🐷 저축 목표</b><span>정하기 ›</span></div><div class="xsub">사고 싶은 것을 정하고 돈을 모아 봐요!</div></button>';
+  var pct = Math.max(0, Math.min(100, Math.round(bal*100/g.amt))), ok = bal>=g.amt;
+  return '<button class="xcard goal'+(ok?' xdone':'')+'" data-act="goalset" data-v="'+k.id+'"><div class="xhd"><b>🐷 '+esc(g.nm)+' 사기</b><span>'+(ok?'🎉 다 모았어요!':'앞으로 '+won(g.amt-bal))+'</span></div>'+
+    '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="xsub">'+won(Math.max(0, bal))+' / '+won(g.amt)+' ('+pct+'%) · 누르면 바꿔요</div></button>';
+}
+function mvpHtml(){
+  var arr = kids().map(function(k){ return {k:k, p:weekStat(k.id).pts}; }).sort(function(a,b){ return b.p-a.p; });
+  if(!arr.length || arr[0].p<=0) return '';
+  var top = arr.filter(function(a){ return a.p===arr[0].p; });
+  return '<div class="mvp"><div class="crown">👑</div><div class="mvpf">'+top.map(function(a){ return '<span class="ava">'+face(a.k)+'</span>'; }).join('')+'</div>'+
+    '<div><small>이번 주 MVP (최근 7일 점수)</small><b>'+top.map(function(a){ return esc(a.k.name); }).join(' · ')+'</b><span>'+arr[0].p+'점</span></div></div>';
+}
+function monthStars(){
+  var td = today(), ym = td.slice(0,7), n = 0;
+  for(var dd=1; dd<=31; dd++){ var ds = ym+'-'+pad(dd); if(ds>td) break; kids().forEach(function(k){ var s = stars(k.id, ds); n += (s.miss?1:0)+(s.out?1:0)+(s.free?1:0)+(s.rep?1:0); }); }
+  return n;
+}
+function fgoalHtml(){
+  var g = S.fgoal; if(!g || g.ym!==today().slice(0,7)) return '';
+  var n = monthStars(), pct = Math.min(100, Math.round(n*100/g.target)), ok = n>=g.target;
+  return '<div class="xcard fgoal'+(ok?' xdone':'')+'"><div class="xhd"><b>🎯 이번 달 가족 목표: '+esc(g.title)+'</b><span>'+(ok?'🎉 성공!':'⭐ '+n+' / '+g.target)+'</span></div>'+
+    '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="xsub">'+(ok?'아이들이 모두 힘을 모아 해냈어요!':'아이들이 모은 별을 모두 더해요. '+(g.target-n)+'개 남았어요!')+'</div></div>';
 }
 
 /* ---------- 서버 로그인·사진 올리기 ---------- */
